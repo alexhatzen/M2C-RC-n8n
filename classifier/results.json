@@ -8,7 +8,8 @@
     "gate_action": "webhook_sent",
     "ground_truth_label": "Messdatenerfassung",
     "kundensegment": "B2C",
-    "betrag_eur": 1850.4
+    "betrag_eur": 1850.4,
+    "n8n_link": "https://azorahai.app.n8n.cloud/workflow/F4PmBWF05PuQVFZE/executions/730"
   },
   {
     "case_id": "CASE-0002",
@@ -19,7 +20,8 @@
     "gate_action": "webhook_sent",
     "ground_truth_label": "Messdatenerfassung",
     "kundensegment": "B2C",
-    "betrag_eur": 573.94
+    "betrag_eur": 573.94,
+    "n8n_link": "https://azorahai.app.n8n.cloud/workflow/F4PmBWF05PuQVFZE/executions/731"
   },
   {
     "case_id": "CASE-0003",

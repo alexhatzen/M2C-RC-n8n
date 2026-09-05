@@ -77,98 +77,94 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://webhook.site/db7ff850-72a4-442a-967a-beb96532a51e",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ { \"mock_target\": \"Slack #metering-ops\", \"message\": \"⚠️ \" + $('Webhook: Klassifiziertes Fall').item.json.body.label + \" — Fall \" + $('Webhook: Klassifiziertes Fall').item.json.body.case_id + \" (Konfidenz \" + $('Webhook: Klassifiziertes Fall').item.json.body.confidence + \", Quelle: \" + $('Webhook: Klassifiziertes Fall').item.json.body.source + \") benötigt Metering-Ops-Check.\", \"case\": $('Webhook: Klassifiziertes Fall').item.json.body } }}",
+        "assignments": {
+          "assignments": [
+            {"id": "a1", "name": "mock_target", "value": "Slack #metering-ops", "type": "string"},
+            {"id": "a2", "name": "message", "value": "={{ '⚠️ ' + $('Webhook: Klassifiziertes Fall').item.json.body.label + ' — Fall ' + $('Webhook: Klassifiziertes Fall').item.json.body.case_id + ' (Konfidenz ' + $('Webhook: Klassifiziertes Fall').item.json.body.confidence + ', Quelle: ' + $('Webhook: Klassifiziertes Fall').item.json.body.source + ') benötigt Metering-Ops-Check.' }}", "type": "string"},
+            {"id": "a3", "name": "case", "value": "={{ $('Webhook: Klassifiziertes Fall').item.json.body }}", "type": "object"}
+          ]
+        },
         "options": {}
       },
       "id": "action-metering-slack",
       "name": "Action: Slack Metering Ops (mock)",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "onError": "continueRegularOutput",
-      "retryOnFail": true,
-      "maxTries": 2,
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
       "position": [320, 60]
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://webhook.site/c6385c41-6dfc-4900-99a9-eb5dfe7103db",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ { \"mock_target\": \"Google Sheet: Billing Review\", \"row\": $('Webhook: Klassifiziertes Fall').item.json.body } }}",
+        "assignments": {
+          "assignments": [
+            {"id": "b1", "name": "mock_target", "value": "Google Sheet: Billing Review", "type": "string"},
+            {"id": "b2", "name": "row", "value": "={{ $('Webhook: Klassifiziertes Fall').item.json.body }}", "type": "object"}
+          ]
+        },
         "options": {}
       },
       "id": "action-billing-sheet",
       "name": "Action: Billing Review Sheet (mock)",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "onError": "continueRegularOutput",
-      "retryOnFail": true,
-      "maxTries": 2,
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
       "position": [320, 220]
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://webhook.site/65339b0b-e9ed-4933-bfd1-944e3cf95c50",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ { \"mock_target\": \"Airtable: Collections Follow-up\", \"task\": $('Webhook: Klassifiziertes Fall').item.json.body } }}",
+        "assignments": {
+          "assignments": [
+            {"id": "c1", "name": "mock_target", "value": "Airtable: Collections Follow-up", "type": "string"},
+            {"id": "c2", "name": "task", "value": "={{ $('Webhook: Klassifiziertes Fall').item.json.body }}", "type": "object"}
+          ]
+        },
         "options": {}
       },
       "id": "action-collections-airtable",
       "name": "Action: Collections Follow-up (mock)",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "onError": "continueRegularOutput",
-      "retryOnFail": true,
-      "maxTries": 2,
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
       "position": [320, 380]
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://webhook.site/003b22cc-2169-49c9-b863-da796b06ab67",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ { \"mock_target\": \"Google Sheet: Finance Review\", \"row\": $('Webhook: Klassifiziertes Fall').item.json.body } }}",
+        "assignments": {
+          "assignments": [
+            {"id": "d1", "name": "mock_target", "value": "Google Sheet: Finance Review", "type": "string"},
+            {"id": "d2", "name": "row", "value": "={{ $('Webhook: Klassifiziertes Fall').item.json.body }}", "type": "object"}
+          ]
+        },
         "options": {}
       },
       "id": "action-finance-sheet",
       "name": "Action: Finance Review Sheet (mock)",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "onError": "continueRegularOutput",
-      "retryOnFail": true,
-      "maxTries": 2,
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
       "position": [320, 540]
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://webhook.site/369ada9f-2bd6-435f-8f65-d4027d9e6a72",
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={{ { \"case_id\": $('Webhook: Klassifiziertes Fall').item.json.body.case_id, \"label\": $('Webhook: Klassifiziertes Fall').item.json.body.label, \"source\": $('Webhook: Klassifiziertes Fall').item.json.body.source, \"confidence\": $('Webhook: Klassifiziertes Fall').item.json.body.confidence, \"action\": ({\"Messdatenerfassung\":\"Slack #metering-ops\",\"Messdatenuebertragung\":\"Slack #metering-ops\",\"Rechnungserstellung\":\"Google Sheet: Billing Review\",\"Mahnverfahren\":\"Airtable: Collections Follow-up\",\"Zahlungsbuchung\":\"Google Sheet: Finance Review\"})[$('Webhook: Klassifiziertes Fall').item.json.body.label] || \"keine Aktion (unklar)\", \"timestamp\": $now.toISO() } }}",
+        "assignments": {
+          "assignments": [
+            {"id": "e1", "name": "case_id", "value": "={{ $('Webhook: Klassifiziertes Fall').item.json.body.case_id }}", "type": "string"},
+            {"id": "e2", "name": "label", "value": "={{ $('Webhook: Klassifiziertes Fall').item.json.body.label }}", "type": "string"},
+            {"id": "e3", "name": "source", "value": "={{ $('Webhook: Klassifiziertes Fall').item.json.body.source }}", "type": "string"},
+            {"id": "e4", "name": "confidence", "value": "={{ $('Webhook: Klassifiziertes Fall').item.json.body.confidence }}", "type": "number"},
+            {"id": "e5", "name": "action", "value": "={{ ({\"Messdatenerfassung\":\"Slack #metering-ops\",\"Messdatenuebertragung\":\"Slack #metering-ops\",\"Rechnungserstellung\":\"Google Sheet: Billing Review\",\"Mahnverfahren\":\"Airtable: Collections Follow-up\",\"Zahlungsbuchung\":\"Google Sheet: Finance Review\"})[$('Webhook: Klassifiziertes Fall').item.json.body.label] || \"keine Aktion (unklar)\" }}", "type": "string"},
+            {"id": "e6", "name": "timestamp", "value": "={{ $now.toISO() }}", "type": "string"},
+            {"id": "e7", "name": "execution_id", "value": "={{ $execution.id }}", "type": "string"}
+          ]
+        },
         "options": {}
       },
       "id": "audit-log",
       "name": "Audit-Log (zentral, mock)",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "onError": "continueRegularOutput",
-      "retryOnFail": true,
-      "maxTries": 2,
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
       "position": [600, 300]
     },
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ { \"status\": \"ok\", \"case_id\": $('Webhook: Klassifiziertes Fall').item.json.body.case_id } }}",
+        "responseBody": "={{ { \"status\": \"ok\", \"case_id\": $('Webhook: Klassifiziertes Fall').item.json.body.case_id, \"action_logged\": $json.action, \"execution_id\": $execution.id } }}",
         "options": {}
       },
       "id": "respond",
