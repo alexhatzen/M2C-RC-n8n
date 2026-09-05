@@ -1,0 +1,2778 @@
+<title>Root-Cause-Klassifizierer</title>
+<meta name="description" content="Automatisierungs-Kreislauf für überfällige Forderungsfälle im Meter-to-Cash-Prozess: Regel-Engine, LLM-Klassifizierer und n8n-Aktionen im Überblick.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    color-scheme: light;
+    --brand: #c31432;
+    --brand-ink: #ffffff;
+    --brand-soft: #fbe7ea;
+
+    --surface-page:   #fdf9f8;
+    --surface-card:   #ffffff;
+    --surface-sunken: #f7f0ef;
+    --border:         #ece1de;
+    --border-strong:  #dcccc8;
+
+    --text-primary:   #1c1412;
+    --text-secondary: #6e615d;
+    --text-muted:     #a4938e;
+
+    --cat-messerf:    #2a78d6; /* Messdatenerfassung */
+    --cat-messueb:    #eb6834; /* Messdatenuebertragung */
+    --cat-rechnung:   #1baf7a; /* Rechnungserstellung */
+    --cat-mahn:       #eda100; /* Mahnverfahren */
+    --cat-zahlung:    #e87ba4; /* Zahlungsbuchung */
+
+    --seq-1: #dbe9fa;
+    --seq-2: #a9cbf0;
+    --seq-3: #6ba6e3;
+    --seq-4: #2a78d6;
+    --seq-5: #144e94;
+
+    --status-good:    #1f9d55;
+    --status-good-bg: #e6f5ec;
+    --status-warn:    #a15c00;
+    --status-warn-bg: #fbecd6;
+    --status-crit:    #c31432;
+    --status-crit-bg: #fbe7ea;
+
+    --shadow-card: 0 1px 2px rgba(28,20,18,0.04), 0 8px 24px -12px rgba(28,20,18,0.12);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --brand: #ff5470;
+      --brand-ink: #1c1412;
+      --brand-soft: #3a1420;
+
+      --surface-page:   #14100f;
+      --surface-card:   #1c1615;
+      --surface-sunken: #221a19;
+      --border:         #2f2523;
+      --border-strong:  #3d302d;
+
+      --text-primary:   #f7efed;
+      --text-secondary: #b9a9a5;
+      --text-muted:     #7d6f6b;
+
+      --cat-messerf:    #3987e5;
+      --cat-messueb:    #d95926;
+      --cat-rechnung:   #199e70;
+      --cat-mahn:       #c98500;
+      --cat-zahlung:    #d55181;
+
+      --seq-1: #1e2a3d;
+      --seq-2: #2c4d78;
+      --seq-3: #3a6fa8;
+      --seq-4: #5b98d9;
+      --seq-5: #a9cbf0;
+
+      --status-good:    #3cb873;
+      --status-good-bg: #113023;
+      --status-warn:    #e0a83a;
+      --status-warn-bg: #332309;
+      --status-crit:    #ff5470;
+      --status-crit-bg: #3a1420;
+
+      --shadow-card: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+    }
+  }
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --brand: #ff5470;
+    --brand-ink: #1c1412;
+    --brand-soft: #3a1420;
+
+    --surface-page:   #14100f;
+    --surface-card:   #1c1615;
+    --surface-sunken: #221a19;
+    --border:         #2f2523;
+    --border-strong:  #3d302d;
+
+    --text-primary:   #f7efed;
+    --text-secondary: #b9a9a5;
+    --text-muted:     #7d6f6b;
+
+    --cat-messerf:    #3987e5;
+    --cat-messueb:    #d95926;
+    --cat-rechnung:   #199e70;
+    --cat-mahn:       #c98500;
+    --cat-zahlung:    #d55181;
+
+    --seq-1: #1e2a3d;
+    --seq-2: #2c4d78;
+    --seq-3: #3a6fa8;
+    --seq-4: #5b98d9;
+    --seq-5: #a9cbf0;
+
+    --status-good:    #3cb873;
+    --status-good-bg: #113023;
+    --status-warn:    #e0a83a;
+    --status-warn-bg: #332309;
+    --status-crit:    #ff5470;
+    --status-crit-bg: #3a1420;
+
+    --shadow-card: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    background: var(--surface-page);
+    color: var(--text-primary);
+    font-family: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3 {
+    font-family: "IBM Plex Sans Condensed", "IBM Plex Sans", sans-serif;
+    font-weight: 700;
+    text-wrap: balance;
+    margin: 0;
+  }
+  .mono, .tabular { font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+
+  a { color: var(--brand); }
+
+  .wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px 64px; }
+
+  /* Header */
+  header.top {
+    border-bottom: 1px solid var(--border);
+    background: var(--surface-card);
+  }
+  .top-inner {
+    max-width: 1180px; margin: 0 auto; padding: 20px 24px;
+    display: flex; align-items: center; justify-content: space-between; gap: 16px;
+  }
+  .brand-row { display: flex; align-items: center; gap: 12px; }
+  .brand-mark {
+    width: 34px; height: 34px; border-radius: 8px; background: var(--brand);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--brand-ink); font-family: "IBM Plex Mono", monospace; font-weight: 600; font-size: 15px;
+    flex-shrink: 0;
+  }
+  .brand-text h1 { font-size: 19px; letter-spacing: -0.01em; }
+  .eyebrow {
+    font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase;
+    color: var(--text-secondary); margin-top: 2px;
+  }
+  .header-actions { display: flex; align-items: center; gap: 10px; }
+  .live-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: "IBM Plex Mono", monospace; font-size: 11px; letter-spacing: 0.04em;
+    color: var(--status-good); background: var(--status-good-bg);
+    border: 1px solid var(--status-good); border-radius: 999px; padding: 5px 10px 5px 8px;
+  }
+  .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--status-good); animation: pulse 2s ease-in-out infinite; }
+  @media (prefers-reduced-motion: reduce) { .live-dot { animation: none; } }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
+
+  .theme-toggle {
+    display: flex; border: 1px solid var(--border-strong); border-radius: 8px; overflow: hidden;
+    background: var(--surface-sunken);
+  }
+  .theme-toggle button {
+    border: none; background: transparent; color: var(--text-secondary);
+    font-family: "IBM Plex Mono", monospace; font-size: 12px; padding: 7px 12px; cursor: pointer;
+  }
+  .theme-toggle button.active { background: var(--brand); color: var(--brand-ink); }
+  .theme-toggle button:focus-visible, button:focus-visible, select:focus-visible {
+    outline: 2px solid var(--brand); outline-offset: 2px;
+  }
+
+  /* Intro */
+  .intro { padding: 28px 0 8px; }
+  .intro p { color: var(--text-secondary); max-width: 62ch; line-height: 1.55; margin: 8px 0 0; }
+
+  /* KPI row */
+  .kpi-row {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 24px 0;
+  }
+  .kpi {
+    background: var(--surface-card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 16px 18px; box-shadow: var(--shadow-card);
+  }
+  .kpi .label {
+    font-family: "IBM Plex Mono", monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--text-secondary);
+  }
+  .kpi .value {
+    font-family: "IBM Plex Sans Condensed", sans-serif; font-weight: 700; font-size: 30px;
+    margin-top: 6px; font-variant-numeric: tabular-nums;
+  }
+  .kpi .sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+  .kpi .value .accent { color: var(--brand); }
+
+  /* Section / cards */
+  section.block { margin: 28px 0; }
+  .section-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; gap: 12px; flex-wrap: wrap; }
+  .section-head h2 { font-size: 17px; }
+  .section-head .hint { font-size: 12px; color: var(--text-muted); }
+
+  .chart-row { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; }
+  .card {
+    background: var(--surface-card); border: 1px solid var(--border); border-radius: 12px;
+    padding: 18px 20px; box-shadow: var(--shadow-card);
+  }
+  .card h3 { font-size: 13px; color: var(--text-secondary); font-weight: 600; margin-bottom: 14px;
+    font-family: "IBM Plex Sans", sans-serif; text-transform: uppercase; letter-spacing: 0.04em; }
+
+  /* Bar chart (category distribution) */
+  .bar-row { display: grid; grid-template-columns: 168px 1fr 46px; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .bar-row:last-child { margin-bottom: 0; }
+  .bar-label { font-size: 12.5px; color: var(--text-primary); display: flex; align-items: center; gap: 7px; }
+  .bar-swatch { width: 9px; height: 9px; border-radius: 2.5px; flex-shrink: 0; }
+  .bar-track { position: relative; height: 20px; background: var(--surface-sunken); border-radius: 5px; overflow: hidden; }
+  .bar-fill { position: absolute; inset: 0 auto 0 0; border-radius: 5px; transition: width 0.5s ease; }
+  .bar-count { font-size: 12px; text-align: right; color: var(--text-secondary); }
+
+  /* Donut */
+  .donut-wrap { display: flex; align-items: center; gap: 22px; justify-content: center; }
+  .donut-legend { display: flex; flex-direction: column; gap: 10px; }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
+  .legend-swatch { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+  .legend-value { font-family: "IBM Plex Mono", monospace; color: var(--text-secondary); margin-left: auto; padding-left: 14px; }
+
+  /* Histogram */
+  .hist { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; align-items: end; height: 130px; }
+  .hist-bar-wrap { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; height: 100%; gap: 4px; position: relative; }
+  .hist-bar { width: 100%; border-radius: 3px 3px 1px 1px; min-height: 2px; }
+  .hist-axis { display: grid; grid-template-columns: repeat(10, 1fr); margin-top: 6px; }
+  .hist-axis span { font-size: 9.5px; color: var(--text-muted); text-align: center; font-family: "IBM Plex Mono", monospace; }
+  .threshold-line {
+    position: absolute; left: -2px; right: -2px; top: 0; bottom: -18px;
+    border-left: 2px dashed var(--brand); pointer-events: none;
+  }
+  .threshold-tag {
+    position: absolute; top: -18px; left: 4px; font-size: 9.5px; color: var(--brand);
+    font-family: "IBM Plex Mono", monospace; white-space: nowrap;
+  }
+
+  /* Filters + table */
+  .filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
+  .filters select {
+    font-family: "IBM Plex Sans", sans-serif; font-size: 12.5px; color: var(--text-primary);
+    background: var(--surface-card); border: 1px solid var(--border-strong); border-radius: 7px;
+    padding: 7px 10px;
+  }
+  .table-scroll { max-height: 420px; overflow-y: auto; overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 780px; }
+  thead th {
+    position: sticky; top: 0; background: var(--surface-sunken); text-align: left;
+    padding: 9px 12px; font-family: "IBM Plex Mono", monospace; font-size: 10.5px; text-transform: uppercase;
+    letter-spacing: 0.05em; color: var(--text-secondary); border-bottom: 1px solid var(--border); z-index: 1;
+  }
+  tbody td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tbody tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--surface-sunken); }
+  td.case-id { font-family: "IBM Plex Mono", monospace; color: var(--text-secondary); }
+  td.reasoning { color: var(--text-secondary); max-width: 280px; }
+  td.confidence { font-family: "IBM Plex Mono", monospace; text-align: right; }
+
+  .chip {
+    display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 500;
+    padding: 3px 8px; border-radius: 999px; white-space: nowrap;
+  }
+  .chip-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .chip-rule { background: var(--surface-sunken); color: var(--text-secondary); border: 1px solid var(--border-strong); }
+  .chip-llm { background: var(--brand-soft); color: var(--brand); border: 1px solid var(--brand); }
+  .chip-good { background: var(--status-good-bg); color: var(--status-good); }
+  .chip-warn { background: var(--status-warn-bg); color: var(--status-warn); }
+  .chip-crit { background: var(--status-crit-bg); color: var(--status-crit); }
+
+  footer.foot {
+    max-width: 1180px; margin: 8px auto 0; padding: 20px 24px 0; border-top: 1px solid var(--border);
+    color: var(--text-muted); font-size: 12px; display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px;
+  }
+
+  @media (max-width: 860px) {
+    .kpi-row { grid-template-columns: repeat(2, 1fr); }
+    .chart-row { grid-template-columns: 1fr; }
+  }
+</style>
+
+<header class="top">
+  <div class="top-inner">
+    <div class="brand-row">
+      <div class="brand-mark">RC</div>
+      <div class="brand-text">
+        <h1>Root-Cause-Klassifizierer</h1>
+        <div class="eyebrow">Meter-to-Cash · Forderungsmanagement</div>
+      </div>
+    </div>
+    <div class="header-actions">
+      <span class="live-badge"><span class="live-dot"></span>n8n-Kreislauf aktiv</span>
+      <div class="theme-toggle" role="group" aria-label="Farbschema">
+        <button type="button" data-theme-choice="light">Hell</button>
+        <button type="button" data-theme-choice="dark">Dunkel</button>
+        <button type="button" data-theme-choice="system" class="active">System</button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="intro">
+    <p>Regel-Engine und LLM-Klassifizierer ordnen überfällige Forderungsfälle einer von 5 Root-Cause-Kategorien zu.
+    Fälle mit Konfidenz ≥ 0,8 lösen automatisch eine Aktion im n8n-Workflow aus, alle anderen landen im Manual-Review-Log.
+    Jede Entscheidung ist auditierbar: Regel oder LLM, mit Konfidenzwert und Begründung.</p>
+  </div>
+
+  <div class="kpi-row" id="kpi-row"></div>
+
+  <section class="block">
+    <div class="section-head">
+      <h2>Ursachenverteilung &amp; Klassifizierungsquelle</h2>
+      <span class="hint">200 synthetische Fälle</span>
+    </div>
+    <div class="chart-row">
+      <div class="card">
+        <h3>Fälle nach Root-Cause-Kategorie</h3>
+        <div id="category-bars"></div>
+      </div>
+      <div class="card">
+        <h3>Regel vs. LLM</h3>
+        <div class="donut-wrap">
+          <svg id="donut" width="150" height="150" viewBox="0 0 150 150" role="img" aria-label="Anteil Regel- vs. LLM-Klassifizierung"></svg>
+          <div class="donut-legend" id="donut-legend"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="section-head">
+      <h2>Konfidenzverteilung</h2>
+      <span class="hint">gestrichelte Linie = Confidence-Gate (0,8)</span>
+    </div>
+    <div class="card">
+      <h3>Fälle nach Konfidenz-Bucket</h3>
+      <div class="hist" id="hist"></div>
+      <div class="hist-axis" id="hist-axis"></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="section-head">
+      <h2>Fallliste</h2>
+      <span class="hint" id="table-count-hint"></span>
+    </div>
+    <div class="filters">
+      <select id="filter-label" aria-label="Nach Kategorie filtern"></select>
+      <select id="filter-source" aria-label="Nach Quelle filtern"></select>
+      <select id="filter-gate" aria-label="Nach Gate-Ergebnis filtern"></select>
+    </div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Fall-ID</th>
+            <th>Root Cause</th>
+            <th>Quelle</th>
+            <th>Konfidenz</th>
+            <th>Gate-Ergebnis</th>
+            <th>Begründung</th>
+          </tr>
+        </thead>
+        <tbody id="table-body"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer class="foot">
+    <span>Demo-Daten synthetisch generiert · Confidence-Threshold 0,8 ist ein Platzhalter, keine kalibrierte Zahl.</span>
+    <span>Slack/Sheet/Airtable-Aktionen sind Platzhalter für reale Zielsysteme.</span>
+  </footer>
+</div>
+
+<script>
+  // --- Theme toggle -----------------------------------------------------
+  (function () {
+    const root = document.documentElement;
+    const buttons = document.querySelectorAll('[data-theme-choice]');
+    let stored = null;
+    try { stored = localStorage.getItem('rc-theme'); } catch (e) {}
+    function apply(choice) {
+      if (choice === 'light') root.setAttribute('data-theme', 'light');
+      else if (choice === 'dark') root.setAttribute('data-theme', 'dark');
+      else root.removeAttribute('data-theme');
+      buttons.forEach(b => b.classList.toggle('active', b.dataset.themeChoice === choice));
+      try { localStorage.setItem('rc-theme', choice); } catch (e) {}
+    }
+    apply(stored || 'system');
+    buttons.forEach(b => b.addEventListener('click', () => apply(b.dataset.themeChoice)));
+  })();
+
+  // --- Data ---------------------------------------------------------------
+  const RESULTS = [
+  {
+    "case_id": "CASE-0001",
+    "label": "Messdatenerfassung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: meter_type=manuell und tage_seit_faelligkeit>30",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenerfassung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1850.4
+  },
+  {
+    "case_id": "CASE-0002",
+    "label": "Messdatenerfassung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: meter_type=manuell und tage_seit_faelligkeit>30",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenerfassung",
+    "kundensegment": "B2C",
+    "betrag_eur": 573.94
+  },
+  {
+    "case_id": "CASE-0003",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.65,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "manual_review",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1378.28
+  },
+  {
+    "case_id": "CASE-0004",
+    "label": "Mahnverfahren",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: bisherige_verzugstage>60 und kein_mahnkontakt_dokumentiert",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Mahnverfahren",
+    "kundensegment": "B2B",
+    "betrag_eur": 11502.71
+  },
+  {
+    "case_id": "CASE-0005",
+    "label": "Mahnverfahren",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: bisherige_verzugstage>60 und kein_mahnkontakt_dokumentiert",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Mahnverfahren",
+    "kundensegment": "B2C",
+    "betrag_eur": 1917.01
+  },
+  {
+    "case_id": "CASE-0006",
+    "label": "Messdatenerfassung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: meter_type=manuell und tage_seit_faelligkeit>30",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenerfassung",
+    "kundensegment": "B2B",
+    "betrag_eur": 9254.03
+  },
+  {
+    "case_id": "CASE-0007",
+    "label": "Mahnverfahren",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: bisherige_verzugstage>60 und kein_mahnkontakt_dokumentiert",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Mahnverfahren",
+    "kundensegment": "B2C",
+    "betrag_eur": 1395.78
+  },
+  {
+    "case_id": "CASE-0008",
+    "label": "Rechnungserstellung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: rechnungsweg=Post und bisherige_verzugstage>20",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Rechnungserstellung",
+    "kundensegment": "B2C",
+    "betrag_eur": 147.96
+  },
+  {
+    "case_id": "CASE-0009",
+    "label": "Rechnungserstellung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: rechnungsweg=Post und bisherige_verzugstage>20",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Rechnungserstellung",
+    "kundensegment": "B2B",
+    "betrag_eur": 6011.83
+  },
+  {
+    "case_id": "CASE-0010",
+    "label": "Rechnungserstellung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: rechnungsweg=Post und bisherige_verzugstage>20",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Rechnungserstellung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1686.98
+  },
+  {
+    "case_id": "CASE-0011",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.96,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2C",
+    "betrag_eur": 437.79
+  },
+  {
+    "case_id": "CASE-0012",
+    "label": "Rechnungserstellung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: rechnungsweg=Post und bisherige_verzugstage>20",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Rechnungserstellung",
+    "kundensegment": "B2C",
+    "betrag_eur": 834.36
+  },
+  {
+    "case_id": "CASE-0013",
+    "label": "Messdatenuebertragung",
+    "source": "llm",
+    "confidence": 0.64,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Messdatenuebertragung' hin",
+    "gate_action": "manual_review",
+    "ground_truth_label": "Messdatenuebertragung",
+    "kundensegment": "B2C",
+    "betrag_eur": 555.07
+  },
+  {
+    "case_id": "CASE-0014",
+    "label": "Rechnungserstellung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: rechnungsweg=Post und bisherige_verzugstage>20",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Rechnungserstellung",
+    "kundensegment": "B2C",
+    "betrag_eur": 2289.36
+  },
+  {
+    "case_id": "CASE-0015",
+    "label": "Messdatenuebertragung",
+    "source": "llm",
+    "confidence": 0.79,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Messdatenuebertragung' hin",
+    "gate_action": "manual_review",
+    "ground_truth_label": "Messdatenuebertragung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1363.58
+  },
+  {
+    "case_id": "CASE-0016",
+    "label": "Mahnverfahren",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: bisherige_verzugstage>60 und kein_mahnkontakt_dokumentiert",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Mahnverfahren",
+    "kundensegment": "B2C",
+    "betrag_eur": 2493.93
+  },
+  {
+    "case_id": "CASE-0017",
+    "label": "Mahnverfahren",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: bisherige_verzugstage>60 und kein_mahnkontakt_dokumentiert",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Mahnverfahren",
+    "kundensegment": "B2C",
+    "betrag_eur": 1581.65
+  },
+  {
+    "case_id": "CASE-0018",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.98,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1188.74
+  },
+  {
+    "case_id": "CASE-0019",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.96,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1715.42
+  },
+  {
+    "case_id": "CASE-0020",
+    "label": "Rechnungserstellung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: rechnungsweg=Post und bisherige_verzugstage>20",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Rechnungserstellung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1106.7
+  },
+  {
+    "case_id": "CASE-0021",
+    "label": "Messdatenerfassung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: meter_type=manuell und tage_seit_faelligkeit>30",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenerfassung",
+    "kundensegment": "B2B",
+    "betrag_eur": 7861.38
+  },
+  {
+    "case_id": "CASE-0022",
+    "label": "Rechnungserstellung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: rechnungsweg=Post und bisherige_verzugstage>20",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Rechnungserstellung",
+    "kundensegment": "B2C",
+    "betrag_eur": 411.75
+  },
+  {
+    "case_id": "CASE-0023",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.99,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2C",
+    "betrag_eur": 83.01
+  },
+  {
+    "case_id": "CASE-0024",
+    "label": "Rechnungserstellung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: rechnungsweg=Post und bisherige_verzugstage>20",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Rechnungserstellung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1433.53
+  },
+  {
+    "case_id": "CASE-0025",
+    "label": "Messdatenerfassung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: meter_type=manuell und tage_seit_faelligkeit>30",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenerfassung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1909.88
+  },
+  {
+    "case_id": "CASE-0026",
+    "label": "Messdatenuebertragung",
+    "source": "llm",
+    "confidence": 0.81,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Messdatenuebertragung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenuebertragung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1335.72
+  },
+  {
+    "case_id": "CASE-0027",
+    "label": "Mahnverfahren",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: bisherige_verzugstage>60 und kein_mahnkontakt_dokumentiert",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Mahnverfahren",
+    "kundensegment": "B2C",
+    "betrag_eur": 2488.04
+  },
+  {
+    "case_id": "CASE-0028",
+    "label": "Mahnverfahren",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: bisherige_verzugstage>60 und kein_mahnkontakt_dokumentiert",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Mahnverfahren",
+    "kundensegment": "B2C",
+    "betrag_eur": 192.82
+  },
+  {
+    "case_id": "CASE-0029",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.83,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2C",
+    "betrag_eur": 210.0
+  },
+  {
+    "case_id": "CASE-0030",
+    "label": "Messdatenuebertragung",
+    "source": "llm",
+    "confidence": 0.64,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Messdatenuebertragung' hin",
+    "gate_action": "manual_review",
+    "ground_truth_label": "Messdatenuebertragung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1302.39
+  },
+  {
+    "case_id": "CASE-0031",
+    "label": "Mahnverfahren",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: bisherige_verzugstage>60 und kein_mahnkontakt_dokumentiert",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Mahnverfahren",
+    "kundensegment": "B2B",
+    "betrag_eur": 8780.12
+  },
+  {
+    "case_id": "CASE-0032",
+    "label": "Messdatenuebertragung",
+    "source": "llm",
+    "confidence": 0.62,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Messdatenuebertragung' hin",
+    "gate_action": "manual_review",
+    "ground_truth_label": "Messdatenuebertragung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1659.39
+  },
+  {
+    "case_id": "CASE-0033",
+    "label": "Mahnverfahren",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: bisherige_verzugstage>60 und kein_mahnkontakt_dokumentiert",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Mahnverfahren",
+    "kundensegment": "B2C",
+    "betrag_eur": 1694.84
+  },
+  {
+    "case_id": "CASE-0034",
+    "label": "Messdatenerfassung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: meter_type=manuell und tage_seit_faelligkeit>30",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenerfassung",
+    "kundensegment": "B2B",
+    "betrag_eur": 4105.52
+  },
+  {
+    "case_id": "CASE-0035",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.88,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1175.38
+  },
+  {
+    "case_id": "CASE-0036",
+    "label": "Mahnverfahren",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: bisherige_verzugstage>60 und kein_mahnkontakt_dokumentiert",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Mahnverfahren",
+    "kundensegment": "B2C",
+    "betrag_eur": 1367.55
+  },
+  {
+    "case_id": "CASE-0037",
+    "label": "Messdatenerfassung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: meter_type=manuell und tage_seit_faelligkeit>30",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenerfassung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1221.55
+  },
+  {
+    "case_id": "CASE-0038",
+    "label": "Messdatenerfassung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: meter_type=manuell und tage_seit_faelligkeit>30",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenerfassung",
+    "kundensegment": "B2B",
+    "betrag_eur": 4345.44
+  },
+  {
+    "case_id": "CASE-0039",
+    "label": "Rechnungserstellung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: rechnungsweg=Post und bisherige_verzugstage>20",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Rechnungserstellung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1234.65
+  },
+  {
+    "case_id": "CASE-0040",
+    "label": "Rechnungserstellung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: rechnungsweg=Post und bisherige_verzugstage>20",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Rechnungserstellung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1371.51
+  },
+  {
+    "case_id": "CASE-0041",
+    "label": "Messdatenerfassung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: meter_type=manuell und tage_seit_faelligkeit>30",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenerfassung",
+    "kundensegment": "B2B",
+    "betrag_eur": 8201.33
+  },
+  {
+    "case_id": "CASE-0042",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.85,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1699.4
+  },
+  {
+    "case_id": "CASE-0043",
+    "label": "Mahnverfahren",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: bisherige_verzugstage>60 und kein_mahnkontakt_dokumentiert",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Mahnverfahren",
+    "kundensegment": "B2C",
+    "betrag_eur": 1561.78
+  },
+  {
+    "case_id": "CASE-0044",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.89,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1800.41
+  },
+  {
+    "case_id": "CASE-0045",
+    "label": "Rechnungserstellung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: rechnungsweg=Post und bisherige_verzugstage>20",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Rechnungserstellung",
+    "kundensegment": "B2C",
+    "betrag_eur": 774.49
+  },
+  {
+    "case_id": "CASE-0046",
+    "label": "Messdatenerfassung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: meter_type=manuell und tage_seit_faelligkeit>30",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenerfassung",
+    "kundensegment": "B2B",
+    "betrag_eur": 14943.4
+  },
+  {
+    "case_id": "CASE-0047",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.63,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "manual_review",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2B",
+    "betrag_eur": 13272.53
+  },
+  {
+    "case_id": "CASE-0048",
+    "label": "Rechnungserstellung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: rechnungsweg=Post und bisherige_verzugstage>20",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Rechnungserstellung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1374.03
+  },
+  {
+    "case_id": "CASE-0049",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.91,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2B",
+    "betrag_eur": 4840.99
+  },
+  {
+    "case_id": "CASE-0050",
+    "label": "Messdatenuebertragung",
+    "source": "llm",
+    "confidence": 0.76,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Messdatenuebertragung' hin",
+    "gate_action": "manual_review",
+    "ground_truth_label": "Messdatenuebertragung",
+    "kundensegment": "B2C",
+    "betrag_eur": 418.18
+  },
+  {
+    "case_id": "CASE-0051",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.99,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2C",
+    "betrag_eur": 2137.43
+  },
+  {
+    "case_id": "CASE-0052",
+    "label": "Mahnverfahren",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: bisherige_verzugstage>60 und kein_mahnkontakt_dokumentiert",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Mahnverfahren",
+    "kundensegment": "B2C",
+    "betrag_eur": 2079.34
+  },
+  {
+    "case_id": "CASE-0053",
+    "label": "Messdatenerfassung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: meter_type=manuell und tage_seit_faelligkeit>30",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenerfassung",
+    "kundensegment": "B2B",
+    "betrag_eur": 2842.94
+  },
+  {
+    "case_id": "CASE-0054",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.9,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2C",
+    "betrag_eur": 220.48
+  },
+  {
+    "case_id": "CASE-0055",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.89,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1094.42
+  },
+  {
+    "case_id": "CASE-0056",
+    "label": "Rechnungserstellung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: rechnungsweg=Post und bisherige_verzugstage>20",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Rechnungserstellung",
+    "kundensegment": "B2B",
+    "betrag_eur": 3546.11
+  },
+  {
+    "case_id": "CASE-0057",
+    "label": "Messdatenerfassung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: meter_type=manuell und tage_seit_faelligkeit>30",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenerfassung",
+    "kundensegment": "B2C",
+    "betrag_eur": 2317.01
+  },
+  {
+    "case_id": "CASE-0058",
+    "label": "Messdatenuebertragung",
+    "source": "llm",
+    "confidence": 0.76,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Messdatenuebertragung' hin",
+    "gate_action": "manual_review",
+    "ground_truth_label": "Messdatenuebertragung",
+    "kundensegment": "B2C",
+    "betrag_eur": 2313.86
+  },
+  {
+    "case_id": "CASE-0059",
+    "label": "Messdatenuebertragung",
+    "source": "llm",
+    "confidence": 0.8,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Messdatenuebertragung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenuebertragung",
+    "kundensegment": "B2C",
+    "betrag_eur": 977.97
+  },
+  {
+    "case_id": "CASE-0060",
+    "label": "Mahnverfahren",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: bisherige_verzugstage>60 und kein_mahnkontakt_dokumentiert",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Mahnverfahren",
+    "kundensegment": "B2B",
+    "betrag_eur": 5570.05
+  },
+  {
+    "case_id": "CASE-0061",
+    "label": "Messdatenuebertragung",
+    "source": "llm",
+    "confidence": 0.76,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Messdatenuebertragung' hin",
+    "gate_action": "manual_review",
+    "ground_truth_label": "Messdatenuebertragung",
+    "kundensegment": "B2C",
+    "betrag_eur": 2165.63
+  },
+  {
+    "case_id": "CASE-0062",
+    "label": "Rechnungserstellung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: rechnungsweg=Post und bisherige_verzugstage>20",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Rechnungserstellung",
+    "kundensegment": "B2C",
+    "betrag_eur": 2453.53
+  },
+  {
+    "case_id": "CASE-0063",
+    "label": "Rechnungserstellung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: rechnungsweg=Post und bisherige_verzugstage>20",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Rechnungserstellung",
+    "kundensegment": "B2B",
+    "betrag_eur": 4287.62
+  },
+  {
+    "case_id": "CASE-0064",
+    "label": "Rechnungserstellung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: rechnungsweg=Post und bisherige_verzugstage>20",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Rechnungserstellung",
+    "kundensegment": "B2C",
+    "betrag_eur": 887.12
+  },
+  {
+    "case_id": "CASE-0065",
+    "label": "Mahnverfahren",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: bisherige_verzugstage>60 und kein_mahnkontakt_dokumentiert",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Mahnverfahren",
+    "kundensegment": "B2B",
+    "betrag_eur": 3256.14
+  },
+  {
+    "case_id": "CASE-0066",
+    "label": "Mahnverfahren",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: bisherige_verzugstage>60 und kein_mahnkontakt_dokumentiert",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Mahnverfahren",
+    "kundensegment": "B2C",
+    "betrag_eur": 2373.98
+  },
+  {
+    "case_id": "CASE-0067",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.97,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2B",
+    "betrag_eur": 7853.28
+  },
+  {
+    "case_id": "CASE-0068",
+    "label": "Rechnungserstellung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: rechnungsweg=Post und bisherige_verzugstage>20",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Rechnungserstellung",
+    "kundensegment": "B2C",
+    "betrag_eur": 507.89
+  },
+  {
+    "case_id": "CASE-0069",
+    "label": "Messdatenuebertragung",
+    "source": "llm",
+    "confidence": 0.75,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Messdatenuebertragung' hin",
+    "gate_action": "manual_review",
+    "ground_truth_label": "Messdatenuebertragung",
+    "kundensegment": "B2C",
+    "betrag_eur": 36.0
+  },
+  {
+    "case_id": "CASE-0070",
+    "label": "Messdatenuebertragung",
+    "source": "llm",
+    "confidence": 0.89,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Messdatenuebertragung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenuebertragung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1700.42
+  },
+  {
+    "case_id": "CASE-0071",
+    "label": "Mahnverfahren",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: bisherige_verzugstage>60 und kein_mahnkontakt_dokumentiert",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Mahnverfahren",
+    "kundensegment": "B2C",
+    "betrag_eur": 1595.2
+  },
+  {
+    "case_id": "CASE-0072",
+    "label": "Messdatenerfassung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: meter_type=manuell und tage_seit_faelligkeit>30",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenerfassung",
+    "kundensegment": "B2C",
+    "betrag_eur": 2023.18
+  },
+  {
+    "case_id": "CASE-0073",
+    "label": "Messdatenerfassung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: meter_type=manuell und tage_seit_faelligkeit>30",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenerfassung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1929.33
+  },
+  {
+    "case_id": "CASE-0074",
+    "label": "Mahnverfahren",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: bisherige_verzugstage>60 und kein_mahnkontakt_dokumentiert",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Mahnverfahren",
+    "kundensegment": "B2C",
+    "betrag_eur": 1253.64
+  },
+  {
+    "case_id": "CASE-0075",
+    "label": "Messdatenuebertragung",
+    "source": "llm",
+    "confidence": 0.9,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Messdatenuebertragung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenuebertragung",
+    "kundensegment": "B2B",
+    "betrag_eur": 13339.25
+  },
+  {
+    "case_id": "CASE-0076",
+    "label": "Messdatenuebertragung",
+    "source": "llm",
+    "confidence": 0.87,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Messdatenuebertragung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenuebertragung",
+    "kundensegment": "B2C",
+    "betrag_eur": 2296.56
+  },
+  {
+    "case_id": "CASE-0077",
+    "label": "Mahnverfahren",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: bisherige_verzugstage>60 und kein_mahnkontakt_dokumentiert",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Mahnverfahren",
+    "kundensegment": "B2C",
+    "betrag_eur": 1412.75
+  },
+  {
+    "case_id": "CASE-0078",
+    "label": "Mahnverfahren",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: bisherige_verzugstage>60 und kein_mahnkontakt_dokumentiert",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Mahnverfahren",
+    "kundensegment": "B2B",
+    "betrag_eur": 6965.75
+  },
+  {
+    "case_id": "CASE-0079",
+    "label": "Mahnverfahren",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: bisherige_verzugstage>60 und kein_mahnkontakt_dokumentiert",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Mahnverfahren",
+    "kundensegment": "B2C",
+    "betrag_eur": 1606.84
+  },
+  {
+    "case_id": "CASE-0080",
+    "label": "Mahnverfahren",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: bisherige_verzugstage>60 und kein_mahnkontakt_dokumentiert",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Mahnverfahren",
+    "kundensegment": "B2C",
+    "betrag_eur": 1793.89
+  },
+  {
+    "case_id": "CASE-0081",
+    "label": "Rechnungserstellung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: rechnungsweg=Post und bisherige_verzugstage>20",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Rechnungserstellung",
+    "kundensegment": "B2B",
+    "betrag_eur": 1668.38
+  },
+  {
+    "case_id": "CASE-0082",
+    "label": "Messdatenuebertragung",
+    "source": "llm",
+    "confidence": 0.88,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Messdatenuebertragung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenuebertragung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1057.65
+  },
+  {
+    "case_id": "CASE-0083",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.99,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1070.65
+  },
+  {
+    "case_id": "CASE-0084",
+    "label": "Messdatenerfassung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: meter_type=manuell und tage_seit_faelligkeit>30",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenerfassung",
+    "kundensegment": "B2C",
+    "betrag_eur": 902.09
+  },
+  {
+    "case_id": "CASE-0085",
+    "label": "Mahnverfahren",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: bisherige_verzugstage>60 und kein_mahnkontakt_dokumentiert",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Mahnverfahren",
+    "kundensegment": "B2C",
+    "betrag_eur": 1109.34
+  },
+  {
+    "case_id": "CASE-0086",
+    "label": "Mahnverfahren",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: bisherige_verzugstage>60 und kein_mahnkontakt_dokumentiert",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Mahnverfahren",
+    "kundensegment": "B2C",
+    "betrag_eur": 1187.12
+  },
+  {
+    "case_id": "CASE-0087",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.91,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1669.29
+  },
+  {
+    "case_id": "CASE-0088",
+    "label": "Mahnverfahren",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: bisherige_verzugstage>60 und kein_mahnkontakt_dokumentiert",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Mahnverfahren",
+    "kundensegment": "B2C",
+    "betrag_eur": 969.49
+  },
+  {
+    "case_id": "CASE-0089",
+    "label": "Mahnverfahren",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: bisherige_verzugstage>60 und kein_mahnkontakt_dokumentiert",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Mahnverfahren",
+    "kundensegment": "B2B",
+    "betrag_eur": 4534.72
+  },
+  {
+    "case_id": "CASE-0090",
+    "label": "Rechnungserstellung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: rechnungsweg=Post und bisherige_verzugstage>20",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Rechnungserstellung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1364.67
+  },
+  {
+    "case_id": "CASE-0091",
+    "label": "Messdatenuebertragung",
+    "source": "llm",
+    "confidence": 0.99,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Messdatenuebertragung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenuebertragung",
+    "kundensegment": "B2B",
+    "betrag_eur": 1083.74
+  },
+  {
+    "case_id": "CASE-0092",
+    "label": "Messdatenuebertragung",
+    "source": "llm",
+    "confidence": 0.84,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Messdatenuebertragung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenuebertragung",
+    "kundensegment": "B2C",
+    "betrag_eur": 346.13
+  },
+  {
+    "case_id": "CASE-0093",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.99,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2C",
+    "betrag_eur": 944.33
+  },
+  {
+    "case_id": "CASE-0094",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.81,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2B",
+    "betrag_eur": 14488.45
+  },
+  {
+    "case_id": "CASE-0095",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.99,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2C",
+    "betrag_eur": 2396.9
+  },
+  {
+    "case_id": "CASE-0096",
+    "label": "Messdatenuebertragung",
+    "source": "llm",
+    "confidence": 0.63,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Messdatenuebertragung' hin",
+    "gate_action": "manual_review",
+    "ground_truth_label": "Messdatenuebertragung",
+    "kundensegment": "B2C",
+    "betrag_eur": 778.4
+  },
+  {
+    "case_id": "CASE-0097",
+    "label": "Messdatenerfassung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: meter_type=manuell und tage_seit_faelligkeit>30",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenerfassung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1665.65
+  },
+  {
+    "case_id": "CASE-0098",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.77,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "manual_review",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2B",
+    "betrag_eur": 12423.8
+  },
+  {
+    "case_id": "CASE-0099",
+    "label": "Mahnverfahren",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: bisherige_verzugstage>60 und kein_mahnkontakt_dokumentiert",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Mahnverfahren",
+    "kundensegment": "B2C",
+    "betrag_eur": 469.18
+  },
+  {
+    "case_id": "CASE-0100",
+    "label": "Rechnungserstellung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: rechnungsweg=Post und bisherige_verzugstage>20",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Rechnungserstellung",
+    "kundensegment": "B2B",
+    "betrag_eur": 7240.67
+  },
+  {
+    "case_id": "CASE-0101",
+    "label": "Rechnungserstellung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: rechnungsweg=Post und bisherige_verzugstage>20",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Rechnungserstellung",
+    "kundensegment": "B2B",
+    "betrag_eur": 1756.61
+  },
+  {
+    "case_id": "CASE-0102",
+    "label": "Messdatenuebertragung",
+    "source": "llm",
+    "confidence": 0.99,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Messdatenuebertragung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenuebertragung",
+    "kundensegment": "B2C",
+    "betrag_eur": 2132.6
+  },
+  {
+    "case_id": "CASE-0103",
+    "label": "Mahnverfahren",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: bisherige_verzugstage>60 und kein_mahnkontakt_dokumentiert",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Mahnverfahren",
+    "kundensegment": "B2C",
+    "betrag_eur": 724.36
+  },
+  {
+    "case_id": "CASE-0104",
+    "label": "Rechnungserstellung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: rechnungsweg=Post und bisherige_verzugstage>20",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Rechnungserstellung",
+    "kundensegment": "B2C",
+    "betrag_eur": 505.95
+  },
+  {
+    "case_id": "CASE-0105",
+    "label": "Mahnverfahren",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: bisherige_verzugstage>60 und kein_mahnkontakt_dokumentiert",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Mahnverfahren",
+    "kundensegment": "B2C",
+    "betrag_eur": 1789.69
+  },
+  {
+    "case_id": "CASE-0106",
+    "label": "Messdatenerfassung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: meter_type=manuell und tage_seit_faelligkeit>30",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenerfassung",
+    "kundensegment": "B2C",
+    "betrag_eur": 634.75
+  },
+  {
+    "case_id": "CASE-0107",
+    "label": "Rechnungserstellung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: rechnungsweg=Post und bisherige_verzugstage>20",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Rechnungserstellung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1083.87
+  },
+  {
+    "case_id": "CASE-0108",
+    "label": "Rechnungserstellung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: rechnungsweg=Post und bisherige_verzugstage>20",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Rechnungserstellung",
+    "kundensegment": "B2C",
+    "betrag_eur": 654.71
+  },
+  {
+    "case_id": "CASE-0109",
+    "label": "Messdatenuebertragung",
+    "source": "llm",
+    "confidence": 0.98,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Messdatenuebertragung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenuebertragung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1913.8
+  },
+  {
+    "case_id": "CASE-0110",
+    "label": "Messdatenuebertragung",
+    "source": "llm",
+    "confidence": 0.69,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Messdatenuebertragung' hin",
+    "gate_action": "manual_review",
+    "ground_truth_label": "Messdatenuebertragung",
+    "kundensegment": "B2C",
+    "betrag_eur": 2442.34
+  },
+  {
+    "case_id": "CASE-0111",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.83,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2C",
+    "betrag_eur": 595.75
+  },
+  {
+    "case_id": "CASE-0112",
+    "label": "Rechnungserstellung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: rechnungsweg=Post und bisherige_verzugstage>20",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Rechnungserstellung",
+    "kundensegment": "B2C",
+    "betrag_eur": 147.2
+  },
+  {
+    "case_id": "CASE-0113",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.88,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2B",
+    "betrag_eur": 7617.74
+  },
+  {
+    "case_id": "CASE-0114",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.87,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2C",
+    "betrag_eur": 489.46
+  },
+  {
+    "case_id": "CASE-0115",
+    "label": "Rechnungserstellung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: rechnungsweg=Post und bisherige_verzugstage>20",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Rechnungserstellung",
+    "kundensegment": "B2B",
+    "betrag_eur": 6310.26
+  },
+  {
+    "case_id": "CASE-0116",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.83,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1422.4
+  },
+  {
+    "case_id": "CASE-0117",
+    "label": "Messdatenerfassung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: meter_type=manuell und tage_seit_faelligkeit>30",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenerfassung",
+    "kundensegment": "B2B",
+    "betrag_eur": 9291.61
+  },
+  {
+    "case_id": "CASE-0118",
+    "label": "Messdatenuebertragung",
+    "source": "llm",
+    "confidence": 0.91,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Messdatenuebertragung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenuebertragung",
+    "kundensegment": "B2B",
+    "betrag_eur": 4811.62
+  },
+  {
+    "case_id": "CASE-0119",
+    "label": "Mahnverfahren",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: bisherige_verzugstage>60 und kein_mahnkontakt_dokumentiert",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Mahnverfahren",
+    "kundensegment": "B2B",
+    "betrag_eur": 1938.89
+  },
+  {
+    "case_id": "CASE-0120",
+    "label": "Messdatenuebertragung",
+    "source": "llm",
+    "confidence": 0.95,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Messdatenuebertragung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenuebertragung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1395.66
+  },
+  {
+    "case_id": "CASE-0121",
+    "label": "Messdatenerfassung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: meter_type=manuell und tage_seit_faelligkeit>30",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenerfassung",
+    "kundensegment": "B2C",
+    "betrag_eur": 752.95
+  },
+  {
+    "case_id": "CASE-0122",
+    "label": "Rechnungserstellung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: rechnungsweg=Post und bisherige_verzugstage>20",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Rechnungserstellung",
+    "kundensegment": "B2C",
+    "betrag_eur": 610.39
+  },
+  {
+    "case_id": "CASE-0123",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.75,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "manual_review",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2C",
+    "betrag_eur": 589.16
+  },
+  {
+    "case_id": "CASE-0124",
+    "label": "Rechnungserstellung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: rechnungsweg=Post und bisherige_verzugstage>20",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Rechnungserstellung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1988.83
+  },
+  {
+    "case_id": "CASE-0125",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.95,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2C",
+    "betrag_eur": 784.58
+  },
+  {
+    "case_id": "CASE-0126",
+    "label": "Rechnungserstellung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: rechnungsweg=Post und bisherige_verzugstage>20",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Rechnungserstellung",
+    "kundensegment": "B2C",
+    "betrag_eur": 233.29
+  },
+  {
+    "case_id": "CASE-0127",
+    "label": "Mahnverfahren",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: bisherige_verzugstage>60 und kein_mahnkontakt_dokumentiert",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Mahnverfahren",
+    "kundensegment": "B2C",
+    "betrag_eur": 2406.11
+  },
+  {
+    "case_id": "CASE-0128",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.82,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1899.2
+  },
+  {
+    "case_id": "CASE-0129",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.8,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1477.84
+  },
+  {
+    "case_id": "CASE-0130",
+    "label": "Messdatenerfassung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: meter_type=manuell und tage_seit_faelligkeit>30",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenerfassung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1686.88
+  },
+  {
+    "case_id": "CASE-0131",
+    "label": "Rechnungserstellung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: rechnungsweg=Post und bisherige_verzugstage>20",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Rechnungserstellung",
+    "kundensegment": "B2C",
+    "betrag_eur": 2364.9
+  },
+  {
+    "case_id": "CASE-0132",
+    "label": "Messdatenerfassung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: meter_type=manuell und tage_seit_faelligkeit>30",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenerfassung",
+    "kundensegment": "B2C",
+    "betrag_eur": 320.75
+  },
+  {
+    "case_id": "CASE-0133",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.76,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "manual_review",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2B",
+    "betrag_eur": 7198.66
+  },
+  {
+    "case_id": "CASE-0134",
+    "label": "Messdatenuebertragung",
+    "source": "llm",
+    "confidence": 0.75,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Messdatenuebertragung' hin",
+    "gate_action": "manual_review",
+    "ground_truth_label": "Messdatenuebertragung",
+    "kundensegment": "B2B",
+    "betrag_eur": 9568.43
+  },
+  {
+    "case_id": "CASE-0135",
+    "label": "Messdatenuebertragung",
+    "source": "llm",
+    "confidence": 0.98,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Messdatenuebertragung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenuebertragung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1756.19
+  },
+  {
+    "case_id": "CASE-0136",
+    "label": "Messdatenerfassung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: meter_type=manuell und tage_seit_faelligkeit>30",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenerfassung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1392.82
+  },
+  {
+    "case_id": "CASE-0137",
+    "label": "Mahnverfahren",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: bisherige_verzugstage>60 und kein_mahnkontakt_dokumentiert",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Mahnverfahren",
+    "kundensegment": "B2B",
+    "betrag_eur": 7190.99
+  },
+  {
+    "case_id": "CASE-0138",
+    "label": "Messdatenuebertragung",
+    "source": "llm",
+    "confidence": 0.7,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Messdatenuebertragung' hin",
+    "gate_action": "manual_review",
+    "ground_truth_label": "Messdatenuebertragung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1059.18
+  },
+  {
+    "case_id": "CASE-0139",
+    "label": "Mahnverfahren",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: bisherige_verzugstage>60 und kein_mahnkontakt_dokumentiert",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Mahnverfahren",
+    "kundensegment": "B2C",
+    "betrag_eur": 504.85
+  },
+  {
+    "case_id": "CASE-0140",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.95,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1939.64
+  },
+  {
+    "case_id": "CASE-0141",
+    "label": "Rechnungserstellung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: rechnungsweg=Post und bisherige_verzugstage>20",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Rechnungserstellung",
+    "kundensegment": "B2B",
+    "betrag_eur": 4601.17
+  },
+  {
+    "case_id": "CASE-0142",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.96,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1362.6
+  },
+  {
+    "case_id": "CASE-0143",
+    "label": "Rechnungserstellung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: rechnungsweg=Post und bisherige_verzugstage>20",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Rechnungserstellung",
+    "kundensegment": "B2C",
+    "betrag_eur": 2334.48
+  },
+  {
+    "case_id": "CASE-0144",
+    "label": "Messdatenuebertragung",
+    "source": "llm",
+    "confidence": 0.73,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Messdatenuebertragung' hin",
+    "gate_action": "manual_review",
+    "ground_truth_label": "Messdatenuebertragung",
+    "kundensegment": "B2B",
+    "betrag_eur": 6456.24
+  },
+  {
+    "case_id": "CASE-0145",
+    "label": "Mahnverfahren",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: bisherige_verzugstage>60 und kein_mahnkontakt_dokumentiert",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Mahnverfahren",
+    "kundensegment": "B2B",
+    "betrag_eur": 9954.28
+  },
+  {
+    "case_id": "CASE-0146",
+    "label": "Mahnverfahren",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: bisherige_verzugstage>60 und kein_mahnkontakt_dokumentiert",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Mahnverfahren",
+    "kundensegment": "B2B",
+    "betrag_eur": 5313.92
+  },
+  {
+    "case_id": "CASE-0147",
+    "label": "Mahnverfahren",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: bisherige_verzugstage>60 und kein_mahnkontakt_dokumentiert",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Mahnverfahren",
+    "kundensegment": "B2C",
+    "betrag_eur": 1045.6
+  },
+  {
+    "case_id": "CASE-0148",
+    "label": "Messdatenerfassung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: meter_type=manuell und tage_seit_faelligkeit>30",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenerfassung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1014.8
+  },
+  {
+    "case_id": "CASE-0149",
+    "label": "Rechnungserstellung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: rechnungsweg=Post und bisherige_verzugstage>20",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Rechnungserstellung",
+    "kundensegment": "B2B",
+    "betrag_eur": 9588.59
+  },
+  {
+    "case_id": "CASE-0150",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.71,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "manual_review",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2C",
+    "betrag_eur": 2305.09
+  },
+  {
+    "case_id": "CASE-0151",
+    "label": "Messdatenerfassung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: meter_type=manuell und tage_seit_faelligkeit>30",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenerfassung",
+    "kundensegment": "B2C",
+    "betrag_eur": 2185.91
+  },
+  {
+    "case_id": "CASE-0152",
+    "label": "Messdatenuebertragung",
+    "source": "llm",
+    "confidence": 0.85,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Messdatenuebertragung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenuebertragung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1997.49
+  },
+  {
+    "case_id": "CASE-0153",
+    "label": "Rechnungserstellung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: rechnungsweg=Post und bisherige_verzugstage>20",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Rechnungserstellung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1344.32
+  },
+  {
+    "case_id": "CASE-0154",
+    "label": "Messdatenuebertragung",
+    "source": "llm",
+    "confidence": 0.84,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Messdatenuebertragung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenuebertragung",
+    "kundensegment": "B2C",
+    "betrag_eur": 977.97
+  },
+  {
+    "case_id": "CASE-0155",
+    "label": "Mahnverfahren",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: bisherige_verzugstage>60 und kein_mahnkontakt_dokumentiert",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Mahnverfahren",
+    "kundensegment": "B2C",
+    "betrag_eur": 661.05
+  },
+  {
+    "case_id": "CASE-0156",
+    "label": "Messdatenerfassung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: meter_type=manuell und tage_seit_faelligkeit>30",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenerfassung",
+    "kundensegment": "B2C",
+    "betrag_eur": 424.41
+  },
+  {
+    "case_id": "CASE-0157",
+    "label": "Rechnungserstellung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: rechnungsweg=Post und bisherige_verzugstage>20",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Rechnungserstellung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1080.92
+  },
+  {
+    "case_id": "CASE-0158",
+    "label": "Mahnverfahren",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: bisherige_verzugstage>60 und kein_mahnkontakt_dokumentiert",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Mahnverfahren",
+    "kundensegment": "B2B",
+    "betrag_eur": 2046.47
+  },
+  {
+    "case_id": "CASE-0159",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.83,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2C",
+    "betrag_eur": 2445.63
+  },
+  {
+    "case_id": "CASE-0160",
+    "label": "Rechnungserstellung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: rechnungsweg=Post und bisherige_verzugstage>20",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Rechnungserstellung",
+    "kundensegment": "B2B",
+    "betrag_eur": 11785.52
+  },
+  {
+    "case_id": "CASE-0161",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.87,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2B",
+    "betrag_eur": 4649.82
+  },
+  {
+    "case_id": "CASE-0162",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.85,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1565.5
+  },
+  {
+    "case_id": "CASE-0163",
+    "label": "Messdatenerfassung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: meter_type=manuell und tage_seit_faelligkeit>30",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenerfassung",
+    "kundensegment": "B2B",
+    "betrag_eur": 983.79
+  },
+  {
+    "case_id": "CASE-0164",
+    "label": "Messdatenuebertragung",
+    "source": "llm",
+    "confidence": 0.99,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Messdatenuebertragung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenuebertragung",
+    "kundensegment": "B2C",
+    "betrag_eur": 467.95
+  },
+  {
+    "case_id": "CASE-0165",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.91,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2C",
+    "betrag_eur": 2288.13
+  },
+  {
+    "case_id": "CASE-0166",
+    "label": "Rechnungserstellung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: rechnungsweg=Post und bisherige_verzugstage>20",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Rechnungserstellung",
+    "kundensegment": "B2C",
+    "betrag_eur": 220.61
+  },
+  {
+    "case_id": "CASE-0167",
+    "label": "Mahnverfahren",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: bisherige_verzugstage>60 und kein_mahnkontakt_dokumentiert",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Mahnverfahren",
+    "kundensegment": "B2B",
+    "betrag_eur": 701.82
+  },
+  {
+    "case_id": "CASE-0168",
+    "label": "Messdatenerfassung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: meter_type=manuell und tage_seit_faelligkeit>30",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenerfassung",
+    "kundensegment": "B2C",
+    "betrag_eur": 681.23
+  },
+  {
+    "case_id": "CASE-0169",
+    "label": "Rechnungserstellung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: rechnungsweg=Post und bisherige_verzugstage>20",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Rechnungserstellung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1562.18
+  },
+  {
+    "case_id": "CASE-0170",
+    "label": "Rechnungserstellung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: rechnungsweg=Post und bisherige_verzugstage>20",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Rechnungserstellung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1601.27
+  },
+  {
+    "case_id": "CASE-0171",
+    "label": "Rechnungserstellung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: rechnungsweg=Post und bisherige_verzugstage>20",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Rechnungserstellung",
+    "kundensegment": "B2C",
+    "betrag_eur": 146.78
+  },
+  {
+    "case_id": "CASE-0172",
+    "label": "Rechnungserstellung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: rechnungsweg=Post und bisherige_verzugstage>20",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Rechnungserstellung",
+    "kundensegment": "B2C",
+    "betrag_eur": 2222.09
+  },
+  {
+    "case_id": "CASE-0173",
+    "label": "Mahnverfahren",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: bisherige_verzugstage>60 und kein_mahnkontakt_dokumentiert",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Mahnverfahren",
+    "kundensegment": "B2B",
+    "betrag_eur": 10599.02
+  },
+  {
+    "case_id": "CASE-0174",
+    "label": "Mahnverfahren",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: bisherige_verzugstage>60 und kein_mahnkontakt_dokumentiert",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Mahnverfahren",
+    "kundensegment": "B2C",
+    "betrag_eur": 279.09
+  },
+  {
+    "case_id": "CASE-0175",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.99,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2C",
+    "betrag_eur": 570.57
+  },
+  {
+    "case_id": "CASE-0176",
+    "label": "Messdatenuebertragung",
+    "source": "llm",
+    "confidence": 0.74,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Messdatenuebertragung' hin",
+    "gate_action": "manual_review",
+    "ground_truth_label": "Messdatenuebertragung",
+    "kundensegment": "B2C",
+    "betrag_eur": 2257.68
+  },
+  {
+    "case_id": "CASE-0177",
+    "label": "Messdatenerfassung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: meter_type=manuell und tage_seit_faelligkeit>30",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenerfassung",
+    "kundensegment": "B2B",
+    "betrag_eur": 14260.66
+  },
+  {
+    "case_id": "CASE-0178",
+    "label": "Messdatenerfassung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: meter_type=manuell und tage_seit_faelligkeit>30",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenerfassung",
+    "kundensegment": "B2C",
+    "betrag_eur": 2428.75
+  },
+  {
+    "case_id": "CASE-0179",
+    "label": "Rechnungserstellung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: rechnungsweg=Post und bisherige_verzugstage>20",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Rechnungserstellung",
+    "kundensegment": "B2B",
+    "betrag_eur": 3475.48
+  },
+  {
+    "case_id": "CASE-0180",
+    "label": "Messdatenuebertragung",
+    "source": "llm",
+    "confidence": 0.81,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Messdatenuebertragung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenuebertragung",
+    "kundensegment": "B2B",
+    "betrag_eur": 5264.11
+  },
+  {
+    "case_id": "CASE-0181",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.91,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2B",
+    "betrag_eur": 14819.15
+  },
+  {
+    "case_id": "CASE-0182",
+    "label": "Rechnungserstellung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: rechnungsweg=Post und bisherige_verzugstage>20",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Rechnungserstellung",
+    "kundensegment": "B2C",
+    "betrag_eur": 98.55
+  },
+  {
+    "case_id": "CASE-0183",
+    "label": "Rechnungserstellung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: rechnungsweg=Post und bisherige_verzugstage>20",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Rechnungserstellung",
+    "kundensegment": "B2C",
+    "betrag_eur": 464.52
+  },
+  {
+    "case_id": "CASE-0184",
+    "label": "Messdatenuebertragung",
+    "source": "llm",
+    "confidence": 0.86,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Messdatenuebertragung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenuebertragung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1140.0
+  },
+  {
+    "case_id": "CASE-0185",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.99,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2C",
+    "betrag_eur": 2365.45
+  },
+  {
+    "case_id": "CASE-0186",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.99,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2B",
+    "betrag_eur": 1381.97
+  },
+  {
+    "case_id": "CASE-0187",
+    "label": "Mahnverfahren",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: bisherige_verzugstage>60 und kein_mahnkontakt_dokumentiert",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Mahnverfahren",
+    "kundensegment": "B2C",
+    "betrag_eur": 1128.38
+  },
+  {
+    "case_id": "CASE-0188",
+    "label": "Rechnungserstellung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: rechnungsweg=Post und bisherige_verzugstage>20",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Rechnungserstellung",
+    "kundensegment": "B2C",
+    "betrag_eur": 712.91
+  },
+  {
+    "case_id": "CASE-0189",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.95,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2B",
+    "betrag_eur": 8193.07
+  },
+  {
+    "case_id": "CASE-0190",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.75,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "manual_review",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2B",
+    "betrag_eur": 2159.0
+  },
+  {
+    "case_id": "CASE-0191",
+    "label": "Messdatenuebertragung",
+    "source": "llm",
+    "confidence": 0.74,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Messdatenuebertragung' hin",
+    "gate_action": "manual_review",
+    "ground_truth_label": "Messdatenuebertragung",
+    "kundensegment": "B2C",
+    "betrag_eur": 2074.59
+  },
+  {
+    "case_id": "CASE-0192",
+    "label": "Mahnverfahren",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: bisherige_verzugstage>60 und kein_mahnkontakt_dokumentiert",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Mahnverfahren",
+    "kundensegment": "B2C",
+    "betrag_eur": 663.3
+  },
+  {
+    "case_id": "CASE-0193",
+    "label": "Mahnverfahren",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: bisherige_verzugstage>60 und kein_mahnkontakt_dokumentiert",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Mahnverfahren",
+    "kundensegment": "B2C",
+    "betrag_eur": 1099.58
+  },
+  {
+    "case_id": "CASE-0194",
+    "label": "Messdatenuebertragung",
+    "source": "llm",
+    "confidence": 0.99,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Messdatenuebertragung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenuebertragung",
+    "kundensegment": "B2B",
+    "betrag_eur": 8644.41
+  },
+  {
+    "case_id": "CASE-0195",
+    "label": "Mahnverfahren",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: bisherige_verzugstage>60 und kein_mahnkontakt_dokumentiert",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Mahnverfahren",
+    "kundensegment": "B2B",
+    "betrag_eur": 1245.97
+  },
+  {
+    "case_id": "CASE-0196",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.94,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2C",
+    "betrag_eur": 559.4
+  },
+  {
+    "case_id": "CASE-0197",
+    "label": "Messdatenuebertragung",
+    "source": "llm",
+    "confidence": 0.92,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Messdatenuebertragung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenuebertragung",
+    "kundensegment": "B2C",
+    "betrag_eur": 318.19
+  },
+  {
+    "case_id": "CASE-0198",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.8,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2C",
+    "betrag_eur": 1926.72
+  },
+  {
+    "case_id": "CASE-0199",
+    "label": "Zahlungsbuchung",
+    "source": "llm",
+    "confidence": 0.95,
+    "reasoning": "(simuliert) Freitext-Notiz deutet auf 'Zahlungsbuchung' hin",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Zahlungsbuchung",
+    "kundensegment": "B2B",
+    "betrag_eur": 12527.18
+  },
+  {
+    "case_id": "CASE-0200",
+    "label": "Messdatenerfassung",
+    "source": "rule",
+    "confidence": 1.0,
+    "reasoning": "Regel: meter_type=manuell und tage_seit_faelligkeit>30",
+    "gate_action": "webhook_failed",
+    "ground_truth_label": "Messdatenerfassung",
+    "kundensegment": "B2B",
+    "betrag_eur": 13862.29
+  }
+];
+
+  const CATEGORY_META = {
+    "Messdatenerfassung":    { color: "var(--cat-messerf)",  short: "Messdatenerfassung" },
+    "Messdatenuebertragung": { color: "var(--cat-messueb)",  short: "Messdatenübertragung" },
+    "Rechnungserstellung":   { color: "var(--cat-rechnung)", short: "Rechnungserstellung" },
+    "Mahnverfahren":         { color: "var(--cat-mahn)",     short: "Mahnverfahren" },
+    "Zahlungsbuchung":       { color: "var(--cat-zahlung)",  short: "Zahlungsbuchung" },
+    "unklar":                { color: "var(--text-muted)",   short: "Unklar" }
+  };
+  const CATEGORY_ORDER = ["Messdatenerfassung","Messdatenuebertragung","Rechnungserstellung","Mahnverfahren","Zahlungsbuchung","unklar"];
+
+  function fmtPct(n) { return (n * 100).toFixed(0) + "%"; }
+
+  // --- KPI row --------------------------------------------------------
+  function renderKpis() {
+    const total = RESULTS.length;
+    const ruleCount = RESULTS.filter(r => r.source === "rule").length;
+    const avgConf = RESULTS.reduce((s, r) => s + r.confidence, 0) / total;
+    const sentCount = RESULTS.filter(r => r.gate_action === "webhook_sent" || r.gate_action === "webhook_failed").length;
+
+    const kpis = [
+      { label: "Gesamtfälle", value: total, sub: "synthetisch generiert" },
+      { label: "Regel-Anteil", value: fmtPct(ruleCount / total), sub: `${ruleCount} von ${total} Fällen ohne LLM-Call` },
+      { label: "Ø Konfidenz", value: avgConf.toFixed(2), sub: "über alle Klassifizierungen" },
+      { label: "Automatisierungsquote", value: fmtPct(sentCount / total), sub: `${sentCount} Fälle ≥ Threshold 0,8` }
+    ];
+    const el = document.getElementById("kpi-row");
+    el.innerHTML = kpis.map(k => `
+      <div class="kpi">
+        <div class="label">${k.label}</div>
+        <div class="value">${k.value}</div>
+        <div class="sub">${k.sub}</div>
+      </div>
+    `).join("");
+  }
+
+  // --- Category bar chart -----------------------------------------------
+  function renderCategoryBars() {
+    const counts = {};
+    CATEGORY_ORDER.forEach(c => counts[c] = 0);
+    RESULTS.forEach(r => { counts[r.label] = (counts[r.label] || 0) + 1; });
+    const max = Math.max(...Object.values(counts), 1);
+    const el = document.getElementById("category-bars");
+    el.innerHTML = CATEGORY_ORDER.filter(c => counts[c] > 0).map(cat => {
+      const meta = CATEGORY_META[cat];
+      const count = counts[cat];
+      const pct = (count / max) * 100;
+      return `
+        <div class="bar-row">
+          <div class="bar-label"><span class="bar-swatch" style="background:${meta.color}"></span>${meta.short}</div>
+          <div class="bar-track"><div class="bar-fill" style="width:${pct}%; background:${meta.color}"></div></div>
+          <div class="bar-count">${count}</div>
+        </div>`;
+    }).join("");
+  }
+
+  // --- Donut: rule vs llm -------------------------------------------------
+  function renderDonut() {
+    const ruleCount = RESULTS.filter(r => r.source === "rule").length;
+    const llmCount = RESULTS.length - ruleCount;
+    const total = RESULTS.length;
+    const svg = document.getElementById("donut");
+    const r = 55, cx = 75, cy = 75, circumference = 2 * Math.PI * r;
+    const ruleFrac = ruleCount / total;
+    const ruleLen = ruleFrac * circumference;
+    const style = getComputedStyle(document.documentElement);
+    const ruleColor = "#8a7a76";
+    const llmColor = style.getPropertyValue('--brand').trim() || "#c31432";
+    svg.innerHTML = `
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="var(--surface-sunken)" stroke-width="18"/>
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${llmColor}" stroke-width="18"
+        stroke-dasharray="${circumference}" stroke-dashoffset="0" transform="rotate(-90 ${cx} ${cy})"/>
+      <circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${ruleColor}" stroke-width="18"
+        stroke-dasharray="${ruleLen} ${circumference - ruleLen}" stroke-dashoffset="0" transform="rotate(-90 ${cx} ${cy})"/>
+      <text x="${cx}" y="${cy - 4}" text-anchor="middle" font-family="IBM Plex Sans Condensed" font-weight="700"
+        font-size="22" fill="var(--text-primary)">${fmtPct(ruleFrac)}</text>
+      <text x="${cx}" y="${cy + 15}" text-anchor="middle" font-family="IBM Plex Mono" font-size="10"
+        fill="var(--text-secondary)">Regel</text>
+    `;
+    document.getElementById("donut-legend").innerHTML = `
+      <div class="legend-item"><span class="legend-swatch" style="background:${ruleColor}"></span>Regel-Engine<span class="legend-value">${ruleCount}</span></div>
+      <div class="legend-item"><span class="legend-swatch" style="background:${llmColor}"></span>LLM-Klassifizierer<span class="legend-value">${llmCount}</span></div>
+    `;
+  }
+
+  // --- Histogram -----------------------------------------------------
+  function renderHistogram() {
+    const buckets = new Array(10).fill(0);
+    RESULTS.forEach(r => {
+      let idx = Math.floor(r.confidence * 10);
+      if (idx > 9) idx = 9;
+      if (idx < 0) idx = 0;
+      buckets[idx]++;
+    });
+    const max = Math.max(...buckets, 1);
+    const hist = document.getElementById("hist");
+    hist.innerHTML = buckets.map((count, i) => {
+      const heightPct = Math.max((count / max) * 100, count > 0 ? 4 : 0);
+      const seq = ["--seq-1","--seq-2","--seq-3","--seq-4","--seq-4","--seq-5","--seq-5","--seq-5","--seq-5","--seq-5"][i];
+      const showThreshold = i === 8; // bucket 0.8-0.9 boundary
+      return `
+        <div class="hist-bar-wrap">
+          ${showThreshold ? '<div class="threshold-line"><span class="threshold-tag">0,8</span></div>' : ''}
+          <div class="hist-bar" style="height:${heightPct}%; background: var(${seq})" title="${count} Fälle"></div>
+        </div>`;
+    }).join("");
+    document.getElementById("hist-axis").innerHTML = buckets.map((_, i) =>
+      `<span>${(i/10).toFixed(1)}</span>`
+    ).join("");
+  }
+
+  // --- Table + filters -----------------------------------------------
+  function gateChip(gate) {
+    if (gate === "webhook_sent" || gate === "webhook_failed") {
+      return `<span class="chip chip-good"><span class="chip-dot" style="background:var(--status-good)"></span>Aktion ausgelöst</span>`;
+    }
+    return `<span class="chip chip-warn"><span class="chip-dot" style="background:var(--status-warn)"></span>Manual Review</span>`;
+  }
+  function sourceChip(source) {
+    if (source === "rule") return `<span class="chip chip-rule">Regel · 1.00</span>`;
+    return `<span class="chip chip-llm">LLM</span>`;
+  }
+
+  function populateFilters() {
+    const labelSel = document.getElementById("filter-label");
+    const sourceSel = document.getElementById("filter-source");
+    const gateSel = document.getElementById("filter-gate");
+    const labels = [...new Set(RESULTS.map(r => r.label))];
+    labelSel.innerHTML = `<option value="">Alle Kategorien</option>` +
+      labels.map(l => `<option value="${l}">${(CATEGORY_META[l] || {short:l}).short}</option>`).join("");
+    sourceSel.innerHTML = `<option value="">Alle Quellen</option><option value="rule">Regel-Engine</option><option value="llm">LLM</option>`;
+    gateSel.innerHTML = `<option value="">Alle Gate-Ergebnisse</option><option value="sent">Aktion ausgelöst</option><option value="manual_review">Manual Review</option>`;
+    [labelSel, sourceSel, gateSel].forEach(s => s.addEventListener("change", renderTable));
+  }
+
+  function renderTable() {
+    const labelFilter = document.getElementById("filter-label").value;
+    const sourceFilter = document.getElementById("filter-source").value;
+    const gateFilter = document.getElementById("filter-gate").value;
+    const rows = RESULTS.filter(r => {
+      if (labelFilter && r.label !== labelFilter) return false;
+      if (sourceFilter && r.source !== sourceFilter) return false;
+      if (gateFilter === "sent" && !(r.gate_action === "webhook_sent" || r.gate_action === "webhook_failed")) return false;
+      if (gateFilter === "manual_review" && r.gate_action !== "manual_review") return false;
+      return true;
+    });
+    document.getElementById("table-count-hint").textContent = `${rows.length} von ${RESULTS.length} Fällen`;
+    document.getElementById("table-body").innerHTML = rows.map(r => `
+      <tr>
+        <td class="case-id">${r.case_id}</td>
+        <td><span class="bar-swatch" style="background:${(CATEGORY_META[r.label]||{}).color || '#999'}; display:inline-block; margin-right:6px;"></span>${(CATEGORY_META[r.label] || {short:r.label}).short}</td>
+        <td>${sourceChip(r.source)}</td>
+        <td class="confidence">${r.confidence.toFixed(2)}</td>
+        <td>${gateChip(r.gate_action)}</td>
+        <td class="reasoning">${r.reasoning || "—"}</td>
+      </tr>
+    `).join("");
+  }
+
+  renderKpis();
+  renderCategoryBars();
+  renderDonut();
+  renderHistogram();
+  populateFilters();
+  renderTable();
+</script>
