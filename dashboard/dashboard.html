@@ -39,9 +39,11 @@
     --status-crit:    #c31432;
     --status-crit-bg: #fbe7ea;
 
-    --shadow-card: 0 1px 2px rgba(28,20,18,0.04), 0 8px 24px -12px rgba(28,20,18,0.12);
+    --shadow-card: 0 1px 2px rgba(28,20,18,0.04), 0 8px 24px -12px rgba(28,20,18,0.12), 0 30px 56px -24px rgba(195,20,50,0.28);
     --glass-bg: rgba(253,249,248,0.72);
     --glass-edge: rgba(255,255,255,0.8);
+    --body-glow: radial-gradient(1100px 480px at 12% -8%, rgba(195,20,50,0.07), transparent 60%),
+                 radial-gradient(900px 420px at 96% 15%, rgba(195,20,50,0.045), transparent 55%);
   }
 
   @media (prefers-color-scheme: dark) {
@@ -80,7 +82,9 @@
       --status-crit:    #ff5470;
       --status-crit-bg: #3a1420;
 
-      --shadow-card: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+      --shadow-card: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5), 0 30px 60px -22px rgba(255,84,112,0.3);
+      --body-glow: radial-gradient(1100px 480px at 12% -8%, rgba(255,84,112,0.12), transparent 60%),
+                   radial-gradient(900px 420px at 96% 15%, rgba(255,84,112,0.07), transparent 55%);
       --glass-bg: rgba(20,16,15,0.66);
       --glass-edge: rgba(255,255,255,0.08);
     }
@@ -120,13 +124,16 @@
     --status-crit:    #ff5470;
     --status-crit-bg: #3a1420;
 
-    --shadow-card: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5);
+    --shadow-card: 0 1px 2px rgba(0,0,0,0.3), 0 8px 24px -12px rgba(0,0,0,0.5), 0 30px 60px -22px rgba(255,84,112,0.3);
+    --body-glow: radial-gradient(1100px 480px at 12% -8%, rgba(255,84,112,0.12), transparent 60%),
+                 radial-gradient(900px 420px at 96% 15%, rgba(255,84,112,0.07), transparent 55%);
   }
 
   * { box-sizing: border-box; }
   body {
     margin: 0;
-    background: var(--surface-page);
+    background: var(--body-glow), var(--surface-page);
+    background-attachment: fixed;
     color: var(--text-primary);
     font-family: "IBM Plex Sans", -apple-system, "Segoe UI", sans-serif;
     -webkit-font-smoothing: antialiased;
@@ -143,53 +150,68 @@
 
   .wrap { max-width: 1180px; margin: 0 auto; padding: 0 24px 64px; }
 
-  /* Sticky toolbar: header + tabs share one glass panel, since both persist
-     while case data scrolls beneath them — the material earns its place here
-     rather than decorating a static card. */
+  /* Hero band: a committed dark red-glow world, independent of the light/dark
+     toggle below it — brand chrome, not dashboard content. Mirrors how Make.com's
+     nav stays dark regardless of the page it sits on. */
+  :root {
+    --hero-bg-1: #0d0405;
+    --hero-bg-2: #2b0810;
+    --hero-ink: #fdf3f1;
+    --hero-ink-dim: #d9b3ae;
+    --hero-glow-1: #ff4d5e;
+    --hero-glow-2: #7a0f1e;
+    --hero-border: rgba(255,255,255,0.09);
+  }
   .toolbar-sticky {
     position: sticky; top: 0; z-index: 10;
-    background: var(--glass-bg);
-    -webkit-backdrop-filter: blur(20px) saturate(160%);
-    backdrop-filter: blur(20px) saturate(160%);
-    box-shadow: inset 0 1px 0 var(--glass-edge), 0 1px 0 var(--border);
+    background:
+      radial-gradient(720px 260px at 12% -40%, rgba(255,77,94,0.35), transparent 65%),
+      linear-gradient(160deg, var(--hero-bg-2), var(--hero-bg-1) 70%);
+    box-shadow: 0 1px 0 var(--hero-border), 0 20px 45px -30px rgba(0,0,0,0.7);
   }
-  header.top { }
   .top-inner {
-    max-width: 1180px; margin: 0 auto; padding: 20px 24px;
+    max-width: 1180px; margin: 0 auto; padding: 22px 24px 18px;
     display: flex; align-items: center; justify-content: space-between; gap: 16px;
   }
-  .brand-row { display: flex; align-items: center; gap: 12px; }
+  .brand-row { display: flex; align-items: center; gap: 16px; }
   .brand-mark {
-    width: 34px; height: 34px; border-radius: 8px; background: var(--brand);
+    width: 46px; height: 46px; border-radius: 50%; flex-shrink: 0; position: relative;
+    background: radial-gradient(circle at 32% 28%, #ff8a94, var(--hero-glow-1) 45%, var(--hero-glow-2) 100%);
+    box-shadow: 0 0 0 1px rgba(255,255,255,0.12) inset, 0 0 26px 2px rgba(255,77,94,0.55);
     display: flex; align-items: center; justify-content: center;
-    color: var(--brand-ink); font-family: "IBM Plex Mono", monospace; font-weight: 600; font-size: 15px;
-    flex-shrink: 0;
   }
-  .brand-text h1 { font-size: 19px; letter-spacing: -0.01em; }
+  .brand-mark svg { width: 22px; height: 22px; }
+  .brand-text h1 {
+    font-size: 26px; letter-spacing: -0.02em; color: var(--hero-ink);
+    font-family: "IBM Plex Sans Condensed", sans-serif; font-weight: 700;
+  }
   .eyebrow {
-    font-size: 11.5px; letter-spacing: 0.03em; font-weight: 500;
-    color: var(--text-secondary); margin-top: 2px;
+    font-size: 12px; letter-spacing: 0.03em; font-weight: 500;
+    color: var(--hero-ink-dim); margin-top: 3px;
   }
   .header-actions { display: flex; align-items: center; gap: 10px; }
   .live-badge {
     display: inline-flex; align-items: center; gap: 6px;
     font-size: 12px; font-weight: 500;
-    color: var(--status-good); background: var(--status-good-bg);
-    border: 1px solid var(--status-good); border-radius: 999px; padding: 5px 10px 5px 8px;
+    color: #ffd7d0; background: rgba(255,77,94,0.14);
+    border: 1px solid rgba(255,138,148,0.4); border-radius: 999px; padding: 5px 10px 5px 8px;
   }
-  .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--status-good); animation: pulse 2s ease-in-out infinite; }
+  .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--hero-glow-1); animation: pulse 2s ease-in-out infinite; box-shadow: 0 0 6px 1px rgba(255,77,94,0.8); }
   @media (prefers-reduced-motion: reduce) { .live-dot { animation: none; } }
   @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
 
   .theme-toggle {
-    display: flex; border: 1px solid var(--border-strong); border-radius: 8px; overflow: hidden;
-    background: var(--surface-sunken);
+    display: flex; border: 1px solid var(--hero-border); border-radius: 8px; overflow: hidden;
+    background: rgba(255,255,255,0.04);
   }
   .theme-toggle button {
-    border: none; background: transparent; color: var(--text-secondary);
+    border: none; background: transparent; color: var(--hero-ink-dim);
     font-family: "IBM Plex Sans", sans-serif; font-size: 12.5px; font-weight: 500; padding: 7px 12px; cursor: pointer;
   }
-  .theme-toggle button.active { background: var(--brand); color: var(--brand-ink); }
+  .theme-toggle button.active {
+    background: linear-gradient(135deg, #ff5f6f, var(--hero-glow-2));
+    color: #fff;
+  }
   .theme-toggle button:focus-visible, button:focus-visible, select:focus-visible {
     outline: 2px solid var(--brand); outline-offset: 2px;
   }
@@ -216,12 +238,12 @@
     margin-top: 6px; font-variant-numeric: tabular-nums;
   }
   .kpi .sub { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
-  .kpi .value .accent { color: var(--brand); }
+  .kpi .value.accent { color: var(--brand); }
 
   /* Section / cards */
   section.block { margin: 28px 0; }
   .section-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; gap: 12px; flex-wrap: wrap; }
-  .section-head h2 { font-size: 17px; }
+  .section-head h2 { font-size: 19.5px; letter-spacing: -0.01em; }
   .section-head .hint { font-size: 12px; color: var(--text-muted); }
 
   .chart-row { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; }
@@ -271,14 +293,16 @@
   .filters select {
     font-family: "IBM Plex Sans", sans-serif; font-size: 12.5px; color: var(--text-primary);
     background: var(--surface-card); border: 1px solid var(--border-strong); border-radius: 7px;
-    padding: 7px 10px;
+    padding: 7px 10px; transition: border-color 0.15s ease;
   }
+  .filters select:hover { border-color: var(--brand); }
+  .filters select:focus-visible { border-color: var(--brand); }
   .table-scroll { max-height: 420px; overflow-y: auto; overflow-x: auto; border: 1px solid var(--border); border-radius: 12px; }
   table { width: 100%; border-collapse: collapse; font-size: 12.5px; min-width: 780px; }
   thead th {
     position: sticky; top: 0; background: var(--surface-sunken); text-align: left;
     padding: 9px 12px; font-family: "IBM Plex Mono", monospace; font-size: 10.5px; text-transform: uppercase;
-    letter-spacing: 0.05em; color: var(--text-secondary); border-bottom: 1px solid var(--border); z-index: 1;
+    letter-spacing: 0.05em; color: var(--text-secondary); border-bottom: 1px solid var(--brand); z-index: 1;
   }
   tbody td { padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: middle; }
   tbody tr:last-child td { border-bottom: none; }
@@ -317,17 +341,21 @@
 
   /* Tab bar (background/stickiness inherited from .toolbar-sticky wrapper) */
   .tabbar {
-    border-top: 1px solid var(--border);
+    border-top: 1px solid var(--hero-border);
   }
-  .tabbar-inner { max-width: 1180px; margin: 0 auto; padding: 0 24px; display: flex; gap: 4px; }
+  .tabbar-inner { max-width: 1180px; margin: 0 auto; padding: 10px 24px 14px; display: flex; gap: 8px; }
   .tab-btn {
-    border: none; background: transparent; cursor: pointer;
+    border: none; cursor: pointer;
     font-family: "IBM Plex Sans", sans-serif; font-size: 13.5px; font-weight: 500;
-    color: var(--text-secondary); padding: 13px 4px; margin-right: 22px;
-    border-bottom: 2px solid transparent; position: relative; top: 1px;
+    color: var(--hero-ink-dim); background: transparent;
+    padding: 8px 16px; border-radius: 999px;
   }
-  .tab-btn.active { color: var(--text-primary); border-bottom-color: var(--brand); }
-  .tab-btn:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+  .tab-btn.active {
+    color: #fff;
+    background: linear-gradient(135deg, #ff5f6f, var(--hero-glow-2));
+    box-shadow: 0 4px 16px -4px rgba(255,77,94,0.6);
+  }
+  .tab-btn:focus-visible { outline: 2px solid var(--hero-glow-1); outline-offset: 2px; }
 
   /* Demo script */
   .script-intro { padding: 28px 0 4px; }
@@ -383,7 +411,14 @@
 <header class="top">
   <div class="top-inner">
     <div class="brand-row">
-      <div class="brand-mark">RC</div>
+      <div class="brand-mark" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none">
+          <circle cx="7" cy="17" r="2.4" fill="#fff"/>
+          <circle cx="17" cy="7" r="2.4" fill="#fff"/>
+          <circle cx="17" cy="17" r="2.4" fill="#fff" fill-opacity="0.55"/>
+          <path d="M9 16 15 8.5M9 17h5.6" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+      </div>
       <div class="brand-text">
         <h1>Root-Cause-Klassifizierer</h1>
         <div class="eyebrow">Meter-to-Cash · Forderungsmanagement</div>
@@ -1180,13 +1215,13 @@
       { label: "Gesamtfälle", value: total, sub: "synthetisch generiert" },
       { label: "Regel-Anteil", value: fmtPct(ruleCount / total), sub: `${ruleCount} von ${total} Fällen ohne LLM-Call` },
       { label: "Ø Konfidenz", value: avgConf.toFixed(2), sub: "über alle Klassifizierungen" },
-      { label: "Automatisierungsquote", value: fmtPct(sentCount / total), sub: `${sentCount} Fälle ≥ Threshold 0,8` }
+      { label: "Automatisierungsquote", value: fmtPct(sentCount / total), sub: `${sentCount} Fälle ≥ Threshold 0,8`, accent: true }
     ];
     const el = document.getElementById("kpi-row");
     el.innerHTML = kpis.map(k => `
       <div class="kpi">
         <div class="label">${k.label}</div>
-        <div class="value">${k.value}</div>
+        <div class="value${k.accent ? ' accent' : ''}">${k.value}</div>
         <div class="sub">${k.sub}</div>
       </div>
     `).join("");
