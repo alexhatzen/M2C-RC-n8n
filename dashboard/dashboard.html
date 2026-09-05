@@ -193,11 +193,10 @@
   .live-badge {
     display: inline-flex; align-items: center; gap: 6px;
     font-size: 12px; font-weight: 500;
-    color: #ffd7d0; background: rgba(255,77,94,0.14);
-    border: 1px solid rgba(255,138,148,0.4); border-radius: 999px; padding: 5px 10px 5px 8px;
+    color: #ffe6b0; background: rgba(224,168,58,0.16);
+    border: 1px solid rgba(224,168,58,0.45); border-radius: 999px; padding: 5px 11px 5px 9px;
   }
-  .live-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--hero-glow-1); animation: pulse 2s ease-in-out infinite; box-shadow: 0 0 6px 1px rgba(255,77,94,0.8); }
-  @media (prefers-reduced-motion: reduce) { .live-dot { animation: none; } }
+  .live-badge svg { flex-shrink: 0; }
   @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.35; } }
 
   .theme-toggle {
@@ -289,6 +288,7 @@
   }
 
   /* Filters + table */
+  .trigger-note { font-size: 12px; color: var(--text-muted); margin: 0 0 12px; }
   .filters { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px; }
   .filters select {
     font-family: "IBM Plex Sans", sans-serif; font-size: 12.5px; color: var(--text-primary);
@@ -316,6 +316,19 @@
   .n8n-link:hover { text-decoration: underline; }
   .n8n-link:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; border-radius: 2px; }
   .n8n-link-empty { color: var(--text-muted); }
+  .n8n-trigger-btn {
+    display: inline-flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 500;
+    color: var(--brand); background: var(--brand-soft); border: 1px solid var(--brand);
+    border-radius: 999px; padding: 4px 10px 4px 8px; cursor: pointer;
+    font-family: "IBM Plex Sans", sans-serif;
+  }
+  .n8n-trigger-btn:hover:not(:disabled) { background: var(--brand); color: var(--brand-ink); }
+  .n8n-trigger-btn:focus-visible { outline: 2px solid var(--brand); outline-offset: 2px; }
+  .n8n-trigger-btn:disabled { cursor: default; }
+  .n8n-trigger-btn.is-pending { opacity: 0.75; }
+  .n8n-trigger-btn.is-error {
+    color: var(--status-crit); background: var(--status-crit-bg); border-color: var(--status-crit);
+  }
   td.confidence { font-family: "IBM Plex Mono", monospace; text-align: right; }
 
   .chip {
@@ -327,6 +340,7 @@
   .chip-llm { background: var(--brand-soft); color: var(--brand); border: 1px solid var(--brand); }
   .chip-good { background: var(--status-good-bg); color: var(--status-good); }
   .chip-warn { background: var(--status-warn-bg); color: var(--status-warn); }
+  .chip-ready { background: var(--surface-sunken); color: var(--text-secondary); border: 1px solid var(--border-strong); }
   .chip-crit { background: var(--status-crit-bg); color: var(--status-crit); }
 
   footer.foot {
@@ -403,6 +417,9 @@
     border-radius: 10px; padding: 14px 16px; margin-bottom: 24px;
   }
   .fallback-box .fb-icon { color: var(--status-warn); flex-shrink: 0; margin-top: 1px; }
+  .fallback-box.info-box { background: var(--surface-sunken); border-color: var(--border-strong); }
+  .fallback-box.info-box .fb-icon { color: var(--text-secondary); }
+  .fallback-box.info-box .fb-text b { color: var(--text-primary); }
   .fallback-box .fb-text { font-size: 13px; color: var(--text-primary); line-height: 1.5; }
   .fallback-box .fb-text b { color: var(--status-warn); }
 </style>
@@ -425,7 +442,12 @@
       </div>
     </div>
     <div class="header-actions">
-      <span class="live-badge"><span class="live-dot"></span>n8n-Kreislauf aktiv</span>
+      <span class="live-badge" title="Zu Demo-Zwecken werden Aktionen manuell ausgelöst, nicht automatisch nach Konfidenz-Gate.">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M6 3v13.5a1 1 0 0 0 1.7.7l2.8-2.8 2 4.7a1 1 0 0 0 1.3.5l1.8-.8a1 1 0 0 0 .5-1.3l-2-4.7h3.9a1 1 0 0 0 .6-1.8L7.6 2.4A1 1 0 0 0 6 3Z" fill="currentColor"/>
+        </svg>
+        Demo: manueller Trigger-Modus
+      </span>
       <div class="theme-toggle" role="group" aria-label="Farbschema">
         <button type="button" data-theme-choice="light">Hell</button>
         <button type="button" data-theme-choice="dark">Dunkel</button>
@@ -489,6 +511,8 @@
       <h2>Fallliste</h2>
       <span class="hint" id="table-count-hint"></span>
     </div>
+    <p class="trigger-note">„Trigger" in der n8n-Spalte löst eine echte n8n-Ausführung für diesen Fall aus (live, kein Replay).
+    Nur für Fälle verfügbar, die das Konfidenz-Gate bestanden haben — Manual-Review-Fälle werden bewusst nicht automatisiert.</p>
     <div class="filters">
       <select id="filter-label" aria-label="Nach Kategorie filtern"></select>
       <select id="filter-source" aria-label="Nach Quelle filtern"></select>
@@ -556,23 +580,26 @@
     </div>
 
     <div class="step">
-      <div class="step-time">1:15</div>
+      <div class="step-time">1:10</div>
       <div class="step-body">
-        <h3>n8n-Ausführung zeigen <span class="step-tag n8n">n8n</span></h3>
-        <div class="step-action">Zu n8n wechseln → Tab „Executions" → letzte Ausführung öffnen → durch
-        Switch-, Action- und Audit-Log-Node klicken.</div>
-        <div class="step-quote">Hier sieht man live, wie der Fall geroutet wird — ein Switch-Node nach
-        Root-Cause-Kategorie, dann die passende Aktion, und ein zentraler Audit-Log-Node, der jede Entscheidung
-        nachvollziehbar protokolliert. Slack, Sheets und Airtable sind hier bewusst Platzhalter — in der echten
-        Systemlandschaft wären das Salesforce oder die internen Ticketsysteme.</div>
+        <h3>Dashboard: Live-Trigger <span class="step-tag tab">Dieser Tab</span> <span class="step-tag n8n">n8n</span></h3>
+        <div class="step-action">Zum Tab „Dashboard" wechseln → runter zur Fallliste → bei einer Zeile mit
+        Gate-Ergebnis „Bereit zum Trigger" auf „Trigger" klicken → Zelle wird live zu „Ausführung ↗" → draufklicken,
+        landet direkt in genau dieser Execution im n8n-Editor (kein Suchen in der Executions-Liste nötig).
+        Manual-Review-Zeilen haben absichtlich keinen Trigger-Button.</div>
+        <div class="step-quote">Das hier ist derselbe Automatisierungs-Kreislauf, aber aus Sicht der
+        Sachbearbeitung: kein Terminal, kein Code — ein Klick auf einen bereits klassifizierten Fall, und man
+        sieht live im n8n-Editor, wie er geroutet und protokolliert wird — Switch-Node nach Root-Cause-Kategorie,
+        die passende Aktion, dann der zentrale Audit-Log-Node. Slack, Sheets und Airtable sind hier bewusst
+        Platzhalter — in der echten Systemlandschaft wären das Salesforce oder die internen Ticketsysteme.</div>
       </div>
     </div>
 
     <div class="step">
-      <div class="step-time">2:00</div>
+      <div class="step-time">1:50</div>
       <div class="step-body">
         <h3>Dashboard: Aggregatsicht <span class="step-tag tab">Dieser Tab</span></h3>
-        <div class="step-action">Zurück zum Tab „Dashboard" wechseln (oben in dieser App).</div>
+        <div class="step-action">Nach oben scrollen, im selben Tab.</div>
         <div class="step-quote">Das ist die aggregierte Sicht über 50 synthetische Fälle: zwei Drittel eindeutig
         genug für Regeln, ein Drittel geht ans LLM. 86 Prozent lösen automatisch eine Aktion aus, der Rest landet
         auditierbar im Manual Review — jede Zeile mit Quelle, Konfidenz und Begründung.</div>
@@ -580,7 +607,7 @@
     </div>
 
     <div class="step">
-      <div class="step-time">2:45</div>
+      <div class="step-time">2:30</div>
       <div class="step-body">
         <h3>Übergabe an die Diskussion <span class="step-tag tab">Sprechen</span></h3>
         <div class="step-action">Zurückzoomen, bevor Fragen kommen.</div>
@@ -589,6 +616,17 @@
         Platzhalters 0,8.</div>
       </div>
     </div>
+  </div>
+
+  <div class="fallback-box info-box" id="trigger-caveat-box">
+    <svg class="fb-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/>
+      <path d="M12 11v5.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+      <circle cx="12" cy="7.6" r="1" fill="currentColor"/>
+    </svg>
+    <span class="fb-text"><b>Falls gefragt:</b> Der "Trigger"-Button sendet das bereits klassifizierte Label/Konfidenz
+    erneut an n8n — er ruft nicht erneut die Regel-Engine oder das LLM auf. Für die echte Live-Klassifizierung
+    (Regel vs. LLM live entscheiden) ist das Terminal-Kommando aus Schritt 2 der richtige Beleg.</span>
   </div>
 
   <div class="fallback-box">
@@ -635,6 +673,14 @@
     showTab(stored === 'script' ? 'script' : 'dashboard');
     tabButtons.forEach(b => b.addEventListener('click', () => showTab(b.dataset.tabChoice)));
   })();
+
+  // --- n8n live trigger config ----------------------------------------
+  // Publicly visible in this page's source by design (confirmed with the user):
+  // n8n Cloud webhooks reflect CORS for any origin, so a live "Trigger" button
+  // can POST directly from the browser. This is a workflow trigger, not a secret —
+  // but it does mean anyone with this artifact's link can fire real n8n executions.
+  const N8N_WEBHOOK_URL = "https://azorahai.app.n8n.cloud/webhook/root-cause-classifier";
+  const N8N_WORKFLOW_URL = "https://azorahai.app.n8n.cloud/workflow/F4PmBWF05PuQVFZE";
 
   // --- Data ---------------------------------------------------------------
   const RESULTS = [
@@ -1303,11 +1349,17 @@
   }
 
   // --- Table + filters -----------------------------------------------
-  function gateChip(gate) {
-    if (gate === "webhook_sent" || gate === "webhook_failed") {
+  function gateChip(r) {
+    if (r.gate_action === "manual_review") {
+      return `<span class="chip chip-warn"><span class="chip-dot" style="background:var(--status-warn)"></span>Manual Review</span>`;
+    }
+    // webhook_sent / webhook_failed: passed the confidence gate, but "ausgelöst" only
+    // once a real n8n execution actually exists (either pre-run or via the Trigger button) —
+    // otherwise this row would claim an action happened when nothing has fired yet.
+    if (r.n8n_link) {
       return `<span class="chip chip-good"><span class="chip-dot" style="background:var(--status-good)"></span>Aktion ausgelöst</span>`;
     }
-    return `<span class="chip chip-warn"><span class="chip-dot" style="background:var(--status-warn)"></span>Manual Review</span>`;
+    return `<span class="chip chip-ready"><span class="chip-dot" style="background:var(--text-muted)"></span>Bereit zum Trigger</span>`;
   }
   function sourceChip(source) {
     if (source === "rule") return `<span class="chip chip-rule">Regel · 1.00</span>`;
@@ -1315,7 +1367,6 @@
   }
 
   function n8nLink(url) {
-    if (!url) return `<span class="n8n-link-empty">–</span>`;
     return `<a class="n8n-link" href="${url}" target="_blank" rel="noopener">
       Ausführung
       <svg width="10" height="10" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -1323,6 +1374,62 @@
       </svg>
     </a>`;
   }
+
+  function n8nCell(r) {
+    if (r.n8n_link) return n8nLink(r.n8n_link);
+    // Manual-review cases failed the confidence gate on purpose — they must not be
+    // auto-triggerable, or the demo would contradict its own gate logic.
+    if (r.gate_action === "manual_review") return `<span class="n8n-link-empty">–</span>`;
+    return `<button type="button" class="n8n-trigger-btn" data-case-id="${r.case_id}">
+      <svg width="9" height="9" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>
+      Trigger
+    </button>`;
+  }
+
+  async function triggerCase(caseId, btn) {
+    const r = RESULTS.find(x => x.case_id === caseId);
+    if (!r) return;
+
+    const originalLabel = btn.innerHTML;
+    btn.disabled = true;
+    btn.classList.add("is-pending");
+    btn.textContent = "Sende …";
+
+    const payload = {
+      case_id: r.case_id, label: r.label, source: r.source, confidence: r.confidence,
+      reasoning: r.reasoning, betrag_eur: r.betrag_eur, kundensegment: r.kundensegment,
+      timestamp: new Date().toISOString(),
+    };
+
+    try {
+      const resp = await fetch(N8N_WEBHOOK_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+      const data = await resp.json();
+      if (!data.execution_id) throw new Error("keine execution_id in Antwort");
+      r.n8n_link = `${N8N_WORKFLOW_URL}/executions/${data.execution_id}`;
+      renderTable();
+    } catch (err) {
+      btn.disabled = false;
+      btn.classList.remove("is-pending");
+      btn.classList.add("is-error");
+      btn.textContent = "Fehler — erneut?";
+      console.error("n8n trigger failed:", err);
+      setTimeout(() => {
+        btn.classList.remove("is-error");
+        btn.innerHTML = originalLabel;
+      }, 3000);
+    }
+  }
+
+  document.getElementById("table-body").addEventListener("click", (e) => {
+    const btn = e.target.closest(".n8n-trigger-btn");
+    if (!btn) return;
+    triggerCase(btn.dataset.caseId, btn);
+  });
 
   function populateFilters() {
     const labelSel = document.getElementById("filter-label");
@@ -1354,9 +1461,9 @@
         <td><span class="bar-swatch" style="background:${(CATEGORY_META[r.label]||{}).color || '#999'}; display:inline-block; margin-right:6px;"></span>${(CATEGORY_META[r.label] || {short:r.label}).short}</td>
         <td>${sourceChip(r.source)}</td>
         <td class="confidence">${r.confidence.toFixed(2)}</td>
-        <td>${gateChip(r.gate_action)}</td>
+        <td>${gateChip(r)}</td>
         <td class="reasoning">${r.reasoning || "—"}</td>
-        <td>${n8nLink(r.n8n_link)}</td>
+        <td>${n8nCell(r)}</td>
       </tr>
     `).join("");
   }
