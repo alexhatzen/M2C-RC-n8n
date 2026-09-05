@@ -29,6 +29,7 @@ from classifier.config import (
     CONFIDENCE_THRESHOLD,
     MANUAL_REVIEW_LOG_PATH,
     N8N_WEBHOOK_URL,
+    N8N_WORKFLOW_URL,
     RESULTS_PATH,
 )
 from classifier.llm_classifier import classify_with_llm
@@ -55,13 +56,28 @@ def classify_case(case: dict) -> dict:
     return classify_with_llm(case)
 
 
-def send_to_n8n(payload: dict) -> bool:
+def send_to_n8n(payload: dict) -> tuple[bool, str | None]:
+    """POSTet an n8n. Gibt (erfolgreich, execution_id) zurück — die execution_id
+    kommt aus der Respond-to-Webhook-Node (`$execution.id`) und erlaubt einen
+    Deep-Link direkt auf die Ausführung dieses Falls im n8n-Editor (Demo-Feature)."""
     try:
         resp = requests.post(N8N_WEBHOOK_URL, json=payload, timeout=10)
-        return resp.ok
+        execution_id = None
+        if resp.ok:
+            try:
+                execution_id = resp.json().get("execution_id")
+            except ValueError:
+                pass
+        return resp.ok, execution_id
     except requests.RequestException as exc:
         print(f"  [WARN] Webhook-POST fehlgeschlagen für {payload.get('case_id')}: {exc}")
-        return False
+        return False, None
+
+
+def n8n_execution_link(execution_id: str | None) -> str | None:
+    if not execution_id:
+        return None
+    return f"{N8N_WORKFLOW_URL}/executions/{execution_id}"
 
 
 def append_manual_review(case: dict, classification: dict) -> None:
@@ -89,8 +105,9 @@ def run_pipeline(cases: list, verbose: bool = True) -> list:
             "timestamp": datetime.now(timezone.utc).isoformat(),
         }
 
+        execution_id = None
         if gate_action == "webhook_sent":
-            sent = send_to_n8n(payload)
+            sent, execution_id = send_to_n8n(payload)
             gate_action = "webhook_sent" if sent else "webhook_failed"
             # n8n fans each call out into 1-2 downstream HTTP requests (action + audit-log);
             # a short pause here keeps us under the mocked endpoints' rate limits.
@@ -113,6 +130,7 @@ def run_pipeline(cases: list, verbose: bool = True) -> list:
                 "confidence": classification["confidence"],
                 "reasoning": classification.get("reasoning"),
                 "gate_action": gate_action,
+                "n8n_link": n8n_execution_link(execution_id),
                 "ground_truth_label": case.get("ground_truth_label"),
                 "kundensegment": case.get("kundensegment"),
                 "betrag_eur": case.get("betrag_eur"),

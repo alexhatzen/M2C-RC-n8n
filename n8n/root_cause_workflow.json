@@ -149,7 +149,8 @@
             {"id": "e3", "name": "source", "value": "={{ $('Webhook: Klassifiziertes Fall').item.json.body.source }}", "type": "string"},
             {"id": "e4", "name": "confidence", "value": "={{ $('Webhook: Klassifiziertes Fall').item.json.body.confidence }}", "type": "number"},
             {"id": "e5", "name": "action", "value": "={{ ({\"Messdatenerfassung\":\"Slack #metering-ops\",\"Messdatenuebertragung\":\"Slack #metering-ops\",\"Rechnungserstellung\":\"Google Sheet: Billing Review\",\"Mahnverfahren\":\"Airtable: Collections Follow-up\",\"Zahlungsbuchung\":\"Google Sheet: Finance Review\"})[$('Webhook: Klassifiziertes Fall').item.json.body.label] || \"keine Aktion (unklar)\" }}", "type": "string"},
-            {"id": "e6", "name": "timestamp", "value": "={{ $now.toISO() }}", "type": "string"}
+            {"id": "e6", "name": "timestamp", "value": "={{ $now.toISO() }}", "type": "string"},
+            {"id": "e7", "name": "execution_id", "value": "={{ $execution.id }}", "type": "string"}
           ]
         },
         "options": {}
@@ -163,7 +164,7 @@
     {
       "parameters": {
         "respondWith": "json",
-        "responseBody": "={{ { \"status\": \"ok\", \"case_id\": $('Webhook: Klassifiziertes Fall').item.json.body.case_id, \"action_logged\": $json.action } }}",
+        "responseBody": "={{ { \"status\": \"ok\", \"case_id\": $('Webhook: Klassifiziertes Fall').item.json.body.case_id, \"action_logged\": $json.action, \"execution_id\": $execution.id } }}",
         "options": {}
       },
       "id": "respond",
