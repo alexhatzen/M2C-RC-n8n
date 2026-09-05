@@ -1,0 +1,5 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+classifier/manual_review_log.csv

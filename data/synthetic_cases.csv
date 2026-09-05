@@ -1,0 +1,51 @@
+case_id,meter_type,tage_seit_faelligkeit,rechnungsweg,kundensegment,betrag_eur,bisherige_verzugstage,kein_mahnkontakt_dokumentiert,freitext_notiz,ground_truth_label
+CASE-0001,manuell,32,SEPA,B2C,1850.4,15,False,Zaehlerstand wirkt im Vergleich zum Vorjahr unplausibel,Messdatenerfassung
+CASE-0002,manuell,68,SEPA,B2C,573.94,2,False,Zaehlerstand wirkt im Vergleich zum Vorjahr unplausibel,Messdatenerfassung
+CASE-0003,iMSys,6,Digital,B2C,1378.28,45,False,Zahlungseingang auf falsches Kundenkonto zugeordnet,Zahlungsbuchung
+CASE-0004,iMSys,80,SEPA,B2B,11502.71,112,True,Kunde reagiert seit mehreren Mahnstufen nicht,Mahnverfahren
+CASE-0005,iMSys,48,SEPA,B2C,1917.01,70,True,"SEPA-Ruecklastschrift, Grund unbekannt",Mahnverfahren
+CASE-0006,manuell,55,Digital,B2B,9254.03,22,False,Kunde meldet falschen Zaehlerstand seit 3 Wochen,Messdatenerfassung
+CASE-0007,iMSys,73,Digital,B2C,1395.78,120,True,Kunde bestreitet Erhalt der Mahnung,Mahnverfahren
+CASE-0008,iMSys,78,Post,B2C,147.96,33,False,Rechnung wurde an alte Adresse verschickt,Rechnungserstellung
+CASE-0009,iMSys,15,Post,B2B,6011.83,35,False,Postversand der Rechnung nicht nachweisbar,Rechnungserstellung
+CASE-0010,iMSys,25,Post,B2C,1686.98,44,False,Rechnung nie erhalten laut Kunde,Rechnungserstellung
+CASE-0011,iMSys,45,Digital,B2C,437.79,34,False,"Kunde legt Zahlungsbeleg vor, Buchung fehlt im System",Zahlungsbuchung
+CASE-0012,iMSys,86,Post,B2C,834.36,56,False,Rechnung nie erhalten laut Kunde,Rechnungserstellung
+CASE-0013,iMSys,17,SEPA,B2C,555.07,25,False,Gateway-Fehler verhindert automatische Verbrauchsuebermittlung,Messdatenuebertragung
+CASE-0014,iMSys,32,Post,B2C,2289.36,52,False,Postversand der Rechnung nicht nachweisbar,Rechnungserstellung
+CASE-0015,iMSys,31,Digital,B2C,1363.58,15,False,Gateway-Fehler verhindert automatische Verbrauchsuebermittlung,Messdatenuebertragung
+CASE-0016,iMSys,79,SEPA,B2C,2493.93,84,True,Kunde bestreitet Erhalt der Mahnung,Mahnverfahren
+CASE-0017,iMSys,16,Digital,B2C,1581.65,116,True,Mahnschreiben kam als unzustellbar zurueck,Mahnverfahren
+CASE-0018,iMSys,9,SEPA,B2C,1188.74,24,False,Verzoegerung bei der Zahlungsverbuchung im System,Zahlungsbuchung
+CASE-0019,iMSys,60,Digital,B2C,1715.42,43,False,"Doppelte Zahlung durch Kunde gemeldet, Buchung ungeklaert",Zahlungsbuchung
+CASE-0020,iMSys,87,Post,B2C,1106.7,42,False,Postversand der Rechnung nicht nachweisbar,Rechnungserstellung
+CASE-0021,manuell,77,SEPA,B2B,7861.38,32,False,Kunde meldet falschen Zaehlerstand seit 3 Wochen,Messdatenerfassung
+CASE-0022,iMSys,86,Post,B2C,411.75,53,False,Rechnung wurde an alte Adresse verschickt,Rechnungserstellung
+CASE-0023,iMSys,54,Digital,B2C,83.01,38,False,Verzoegerung bei der Zahlungsverbuchung im System,Zahlungsbuchung
+CASE-0024,iMSys,35,Post,B2C,1433.53,24,False,Rechnung nie erhalten laut Kunde,Rechnungserstellung
+CASE-0025,manuell,77,SEPA,B2C,1909.88,52,False,Zaehlerablesung konnte beim letzten Termin nicht durchgefuehrt werden,Messdatenerfassung
+CASE-0026,iMSys,57,SEPA,B2C,1335.72,35,False,Gateway-Fehler verhindert automatische Verbrauchsuebermittlung,Messdatenuebertragung
+CASE-0027,iMSys,32,Digital,B2C,2488.04,106,True,Kein dokumentierter Mahnkontakt trotz langer Verzugsdauer,Mahnverfahren
+CASE-0028,iMSys,71,SEPA,B2C,192.82,68,True,"SEPA-Ruecklastschrift, Grund unbekannt",Mahnverfahren
+CASE-0029,iMSys,40,Digital,B2C,210.0,37,False,"Zahlung wurde laut Kunde ueberwiesen, ist aber nicht verbucht",Zahlungsbuchung
+CASE-0030,iMSys,19,Digital,B2C,1302.39,55,False,Messwerte kommen verzoegert beim Messstellenbetreiber an,Messdatenuebertragung
+CASE-0031,iMSys,32,Digital,B2B,8780.12,107,True,Mahnschreiben kam als unzustellbar zurueck,Mahnverfahren
+CASE-0032,iMSys,45,SEPA,B2C,1659.39,12,False,Messwerte kommen verzoegert beim Messstellenbetreiber an,Messdatenuebertragung
+CASE-0033,iMSys,57,SEPA,B2C,1694.84,116,True,"SEPA-Ruecklastschrift, Grund unbekannt",Mahnverfahren
+CASE-0034,manuell,56,SEPA,B2B,4105.52,51,False,Zaehlerablesung konnte beim letzten Termin nicht durchgefuehrt werden,Messdatenerfassung
+CASE-0035,iMSys,33,Digital,B2C,1175.38,27,False,"Zahlung wurde laut Kunde ueberwiesen, ist aber nicht verbucht",Zahlungsbuchung
+CASE-0036,iMSys,75,Digital,B2C,1367.55,64,True,"SEPA-Ruecklastschrift, Grund unbekannt",Mahnverfahren
+CASE-0037,manuell,90,Digital,B2C,1221.55,10,False,Manuelle Ablesung steht seit ueber einem Monat aus,Messdatenerfassung
+CASE-0038,manuell,41,SEPA,B2B,4345.44,0,False,Manuelle Ablesung steht seit ueber einem Monat aus,Messdatenerfassung
+CASE-0039,iMSys,59,Post,B2C,1234.65,56,False,Rechnung wurde an alte Adresse verschickt,Rechnungserstellung
+CASE-0040,iMSys,32,Post,B2C,1371.51,24,False,Kunde meldet fehlerhafte Rechnungspositionen,Rechnungserstellung
+CASE-0041,manuell,34,SEPA,B2B,8201.33,32,False,Kunde meldet falschen Zaehlerstand seit 3 Wochen,Messdatenerfassung
+CASE-0042,iMSys,10,Digital,B2C,1699.4,4,False,Zahlungseingang auf falsches Kundenkonto zugeordnet,Zahlungsbuchung
+CASE-0043,iMSys,20,Digital,B2C,1561.78,98,True,Mahnschreiben kam als unzustellbar zurueck,Mahnverfahren
+CASE-0044,iMSys,41,SEPA,B2C,1800.41,16,False,Zahlungseingang auf falsches Kundenkonto zugeordnet,Zahlungsbuchung
+CASE-0045,iMSys,55,Post,B2C,774.49,29,False,Kunde meldet fehlerhafte Rechnungspositionen,Rechnungserstellung
+CASE-0046,manuell,31,SEPA,B2B,14943.4,39,False,Kunde meldet falschen Zaehlerstand seit 3 Wochen,Messdatenerfassung
+CASE-0047,iMSys,18,SEPA,B2B,13272.53,8,False,Zahlungseingang auf falsches Kundenkonto zugeordnet,Zahlungsbuchung
+CASE-0048,iMSys,41,Post,B2C,1374.03,31,False,Kunde meldet fehlerhafte Rechnungspositionen,Rechnungserstellung
+CASE-0049,iMSys,56,Digital,B2B,4840.99,42,False,"Zahlung wurde laut Kunde ueberwiesen, ist aber nicht verbucht",Zahlungsbuchung
+CASE-0050,iMSys,31,Digital,B2C,418.18,6,False,Messwerte kommen verzoegert beim Messstellenbetreiber an,Messdatenuebertragung
